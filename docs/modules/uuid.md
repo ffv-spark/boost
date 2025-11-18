@@ -1,8 +1,8 @@
-# Boost.Uuid - UUID 生成库
+# Boost.UUID - 通用唯一标识符库
 
 ## 概述
 
-Boost.Uuid 提供通用唯一识别码（UUID）的生成和操作。
+Boost.UUID 提供通用唯一标识符（UUID）的生成和操作功能。
 
 **类型**: 仅头文件库
 
@@ -17,7 +17,7 @@ Boost.Uuid 提供通用唯一识别码（UUID）的生成和操作。
 #include <iostream>
 
 int main() {
-    // 随机 UUID
+    // 生成随机 UUID
     boost::uuids::random_generator gen;
     boost::uuids::uuid id = gen();
 
@@ -29,7 +29,33 @@ int main() {
 
 ---
 
-## UUID 生成器
+## UUID 基本操作
+
+```cpp
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <iostream>
+
+int main() {
+    boost::uuids::uuid id;
+
+    // 检查是否为 nil
+    std::cout << std::boolalpha;
+    std::cout << "是否为 nil: " << id.is_nil() << std::endl;
+
+    // 获取大小
+    std::cout << "大小: " << id.size() << " 字节" << std::endl;
+
+    // 获取版本
+    std::cout << "版本: " << (int)id.version() << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 随机 UUID
 
 ```cpp
 #include <boost/uuid/uuid.hpp>
@@ -38,26 +64,13 @@ int main() {
 #include <iostream>
 
 int main() {
-    // 1. 随机生成器（最常用）
-    boost::uuids::random_generator random_gen;
-    auto uuid1 = random_gen();
-    std::cout << "Random: " << uuid1 << std::endl;
+    boost::uuids::random_generator gen;
 
-    // 2. 名称生成器（基于命名空间和名称）
-    boost::uuids::name_generator name_gen(
-        boost::uuids::ns::dns());
-    auto uuid2 = name_gen("example.com");
-    std::cout << "Name-based: " << uuid2 << std::endl;
-
-    // 3. 空 UUID
-    boost::uuids::nil_generator nil_gen;
-    auto uuid3 = nil_gen();
-    std::cout << "Nil: " << uuid3 << std::endl;
-
-    // 4. 字符串生成器
-    boost::uuids::string_generator string_gen;
-    auto uuid4 = string_gen("01234567-89ab-cdef-0123-456789abcdef");
-    std::cout << "From string: " << uuid4 << std::endl;
+    std::cout << "生成5个随机 UUID:\n";
+    for (int i = 0; i < 5; ++i) {
+        boost::uuids::uuid id = gen();
+        std::cout << "  " << id << std::endl;
+    }
 
     return 0;
 }
@@ -65,7 +78,104 @@ int main() {
 
 ---
 
-## UUID 操作
+## 基于名称的 UUID
+
+```cpp
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <iostream>
+#include <string>
+
+int main() {
+    // DNS 命名空间 UUID
+    boost::uuids::uuid dns_namespace = 
+        boost::uuids::string_generator()("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
+
+    // 基于名称生成 UUID
+    boost::uuids::name_generator gen(dns_namespace);
+
+    std::string name1 = "example.com";
+    std::string name2 = "google.com";
+
+    boost::uuids::uuid id1 = gen(name1);
+    boost::uuids::uuid id2 = gen(name2);
+
+    std::cout << "example.com UUID: " << id1 << std::endl;
+    std::cout << "google.com UUID: " << id2 << std::endl;
+
+    // 相同名称生成相同 UUID
+    boost::uuids::uuid id3 = gen(name1);
+    std::cout << "再次生成 example.com: " << id3 << std::endl;
+    std::cout << "id1 == id3: " << (id1 == id3) << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 字符串转换
+
+```cpp
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <iostream>
+#include <sstream>
+
+int main() {
+    boost::uuids::random_generator gen;
+    boost::uuids::uuid id = gen();
+
+    // UUID 转字符串
+    std::string uuid_str = boost::uuids::to_string(id);
+    std::cout << "UUID 字符串: " << uuid_str << std::endl;
+
+    // 字符串转 UUID
+    boost::uuids::string_generator str_gen;
+    boost::uuids::uuid id2 = str_gen(uuid_str);
+
+    std::cout << "解析的 UUID: " << id2 << std::endl;
+    std::cout << "相等: " << (id == id2) << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## UUID 比较
+
+```cpp
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <iostream>
+
+int main() {
+    boost::uuids::random_generator gen;
+
+    boost::uuids::uuid id1 = gen();
+    boost::uuids::uuid id2 = gen();
+    boost::uuids::uuid id3 = id1;
+
+    std::cout << std::boolalpha;
+    std::cout << "id1: " << id1 << std::endl;
+    std::cout << "id2: " << id2 << std::endl;
+    std::cout << "id3: " << id3 << std::endl;
+
+    std::cout << "\nid1 == id2: " << (id1 == id2) << std::endl;
+    std::cout << "id1 == id3: " << (id1 == id3) << std::endl;
+    std::cout << "id1 < id2: " << (id1 < id2) << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 容器中使用
 
 ```cpp
 #include <boost/uuid/uuid.hpp>
@@ -73,33 +183,44 @@ int main() {
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
 #include <vector>
+#include <set>
+#include <map>
 
 int main() {
     boost::uuids::random_generator gen;
-    boost::uuids::uuid id1 = gen();
-    boost::uuids::uuid id2 = gen();
 
-    // 比较
-    std::cout << "Equal: " << (id1 == id2) << std::endl;
-    std::cout << "Not equal: " << (id1 != id2) << std::endl;
-    std::cout << "Less than: " << (id1 < id2) << std::endl;
-
-    // 转字符串
-    std::string str = boost::uuids::to_string(id1);
-    std::cout << "String: " << str << std::endl;
-
-    // 获取字节
-    std::cout << "Size: " << id1.size() << " bytes" << std::endl;
-
-    std::cout << "Bytes: ";
-    for (auto byte : id1) {
-        printf("%02x ", byte);
+    // vector
+    std::vector<boost::uuids::uuid> vec;
+    for (int i = 0; i < 5; ++i) {
+        vec.push_back(gen());
     }
-    std::cout << std::endl;
 
-    // 判空
-    boost::uuids::uuid nil;
-    std::cout << "Is nil: " << nil.is_nil() << std::endl;
+    std::cout << "Vector 中的 UUID:\n";
+    for (const auto& id : vec) {
+        std::cout << "  " << id << std::endl;
+    }
+
+    // set（自动排序）
+    std::set<boost::uuids::uuid> s;
+    for (int i = 0; i < 5; ++i) {
+        s.insert(gen());
+    }
+
+    std::cout << "\nSet 中的 UUID（已排序）:\n";
+    for (const auto& id : s) {
+        std::cout << "  " << id << std::endl;
+    }
+
+    // map
+    std::map<boost::uuids::uuid, std::string> m;
+    m[gen()] = "Alice";
+    m[gen()] = "Bob";
+    m[gen()] = "Charlie";
+
+    std::cout << "\nMap 中的 UUID:\n";
+    for (const auto& pair : m) {
+        std::cout << "  " << pair.first << " -> " << pair.second << std::endl;
+    }
 
     return 0;
 }
@@ -107,171 +228,143 @@ int main() {
 
 ---
 
-## 实用示例
-
-### 数据库主键
+## 数据库主键
 
 ```cpp
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
-#include <map>
 #include <string>
+#include <map>
 
 struct User {
     boost::uuids::uuid id;
     std::string name;
-    int age;
-};
+    std::string email;
 
-class UserDatabase {
-public:
-    UserDatabase() : gen_() {}
-
-    boost::uuids::uuid create_user(const std::string& name, int age) {
-        User user;
-        user.id = gen_();
-        user.name = name;
-        user.age = age;
-
-        users_[user.id] = user;
-
-        std::cout << "Created user " << user.id << ": " << name << std::endl;
-
-        return user.id;
+    User(const std::string& n, const std::string& e)
+        : name(n), email(e) {
+        boost::uuids::random_generator gen;
+        id = gen();
     }
-
-    User* get_user(const boost::uuids::uuid& id) {
-        auto it = users_.find(id);
-        if (it != users_.end()) {
-            return &it->second;
-        }
-        return nullptr;
-    }
-
-private:
-    boost::uuids::random_generator gen_;
-    std::map<boost::uuids::uuid, User> users_;
 };
 
 int main() {
-    UserDatabase db;
+    std::map<boost::uuids::uuid, User> users;
 
-    auto id1 = db.create_user("Alice", 25);
-    auto id2 = db.create_user("Bob", 30);
+    // 创建用户
+    User alice("Alice", "alice@example.com");
+    User bob("Bob", "bob@example.com");
+    User charlie("Charlie", "charlie@example.com");
 
-    if (User* user = db.get_user(id1)) {
-        std::cout << "Found: " << user->name << ", age " << user->age << std::endl;
+    users[alice.id] = alice;
+    users[bob.id] = bob;
+    users[charlie.id] = charlie;
+
+    std::cout << "用户数据库:\n";
+    for (const auto& pair : users) {
+        std::cout << "  ID: " << pair.first << std::endl;
+        std::cout << "    姓名: " << pair.second.name << std::endl;
+        std::cout << "    邮箱: " << pair.second.email << std::endl;
     }
 
     return 0;
 }
 ```
 
-### 文件唯一命名
+---
+
+## Nil UUID
 
 ```cpp
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
-#include <fstream>
-
-std::string generate_filename(const std::string& prefix, const std::string& ext) {
-    boost::uuids::random_generator gen;
-    boost::uuids::uuid id = gen();
-
-    return prefix + "_" + boost::uuids::to_string(id) + ext;
-}
 
 int main() {
-    std::string filename = generate_filename("upload", ".jpg");
-    std::cout << "Generated filename: " << filename << std::endl;
+    // Nil UUID (全零)
+    boost::uuids::uuid nil_id = boost::uuids::nil_uuid();
 
-    // 创建文件
-    std::ofstream file(filename);
-    file << "File content";
-    file.close();
+    std::cout << "Nil UUID: " << nil_id << std::endl;
+    std::cout << "是否为 nil: " << nil_id.is_nil() << std::endl;
 
-    std::cout << "File created: " << filename << std::endl;
+    // 默认构造也是 nil
+    boost::uuids::uuid default_id;
+    std::cout << "默认 UUID: " << default_id << std::endl;
+    std::cout << "是否为 nil: " << default_id.is_nil() << std::endl;
 
     return 0;
 }
 ```
 
-### 会话管理
+---
+
+## 会话跟踪
 
 ```cpp
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
-#include <map>
 #include <string>
-#include <ctime>
+#include <map>
+#include <chrono>
 
 struct Session {
     boost::uuids::uuid id;
-    std::string user_id;
-    std::time_t created_at;
-    std::time_t last_accessed;
+    std::string username;
+    std::chrono::system_clock::time_point created;
+
+    Session(const std::string& user) 
+        : username(user), created(std::chrono::system_clock::now()) {
+        boost::uuids::random_generator gen;
+        id = gen();
+    }
 };
 
 class SessionManager {
 public:
-    boost::uuids::uuid create_session(const std::string& user_id) {
-        Session session;
-        session.id = gen_();
-        session.user_id = user_id;
-        session.created_at = std::time(nullptr);
-        session.last_accessed = session.created_at;
-
+    boost::uuids::uuid create_session(const std::string& username) {
+        Session session(username);
         sessions_[session.id] = session;
-
-        std::cout << "Created session " << session.id
-                  << " for user " << user_id << std::endl;
-
+        std::cout << "创建会话: " << session.id << " 用户: " << username << std::endl;
         return session.id;
     }
 
     bool validate_session(const boost::uuids::uuid& session_id) {
-        auto it = sessions_.find(session_id);
-        if (it != sessions_.end()) {
-            it->second.last_accessed = std::time(nullptr);
-            return true;
-        }
-        return false;
+        return sessions_.find(session_id) != sessions_.end();
     }
 
-    void cleanup_expired_sessions(int timeout_seconds) {
-        std::time_t now = std::time(nullptr);
-        for (auto it = sessions_.begin(); it != sessions_.end(); ) {
-            if (now - it->second.last_accessed > timeout_seconds) {
-                std::cout << "Removing expired session " << it->first << std::endl;
-                it = sessions_.erase(it);
-            } else {
-                ++it;
-            }
-        }
+    void close_session(const boost::uuids::uuid& session_id) {
+        sessions_.erase(session_id);
+        std::cout << "关闭会话: " << session_id << std::endl;
     }
 
 private:
-    boost::uuids::random_generator gen_;
     std::map<boost::uuids::uuid, Session> sessions_;
 };
 
 int main() {
     SessionManager manager;
 
-    auto sid1 = manager.create_session("user1");
-    auto sid2 = manager.create_session("user2");
+    // 创建会话
+    auto session1 = manager.create_session("Alice");
+    auto session2 = manager.create_session("Bob");
 
-    std::cout << "\nValidating sessions:\n";
-    std::cout << "Session 1 valid: " << manager.validate_session(sid1) << std::endl;
+    // 验证会话
+    std::cout << "\n验证会话:\n";
+    std::cout << "session1 有效: " << manager.validate_session(session1) << std::endl;
+    std::cout << "session2 有效: " << manager.validate_session(session2) << std::endl;
 
-    boost::uuids::uuid fake_id = boost::uuids::random_generator()();
-    std::cout << "Fake session valid: " << manager.validate_session(fake_id) << std::endl;
+    // 关闭会话
+    std::cout << std::endl;
+    manager.close_session(session1);
+
+    std::cout << "\n关闭后验证:\n";
+    std::cout << "session1 有效: " << manager.validate_session(session1) << std::endl;
+    std::cout << "session2 有效: " << manager.validate_session(session2) << std::endl;
 
     return 0;
 }
@@ -279,32 +372,41 @@ int main() {
 
 ---
 
-## 名称空间
+## 哈希支持
 
 ```cpp
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_hash.hpp>
 #include <iostream>
+#include <unordered_map>
+#include <unordered_set>
 
 int main() {
-    // 预定义的命名空间
-    boost::uuids::name_generator dns_gen(boost::uuids::ns::dns());
-    boost::uuids::name_generator url_gen(boost::uuids::ns::url());
-    boost::uuids::name_generator oid_gen(boost::uuids::ns::oid());
-    boost::uuids::name_generator x500_gen(boost::uuids::ns::x500());
+    boost::uuids::random_generator gen;
 
-    // 基于域名生成 UUID
-    auto dns_uuid = dns_gen("example.com");
-    std::cout << "DNS UUID: " << dns_uuid << std::endl;
+    // unordered_set
+    std::unordered_set<boost::uuids::uuid, boost::hash<boost::uuids::uuid>> s;
+    for (int i = 0; i < 5; ++i) {
+        s.insert(gen());
+    }
 
-    // 同样的输入总是产生同样的 UUID
-    auto dns_uuid2 = dns_gen("example.com");
-    std::cout << "Same input: " << (dns_uuid == dns_uuid2) << std::endl;
+    std::cout << "Unordered Set:\n";
+    for (const auto& id : s) {
+        std::cout << "  " << id << std::endl;
+    }
 
-    // 不同输入产生不同 UUID
-    auto dns_uuid3 = dns_gen("other.com");
-    std::cout << "Different input: " << (dns_uuid != dns_uuid3) << std::endl;
+    // unordered_map
+    std::unordered_map<boost::uuids::uuid, std::string, boost::hash<boost::uuids::uuid>> m;
+    m[gen()] = "Value 1";
+    m[gen()] = "Value 2";
+    m[gen()] = "Value 3";
+
+    std::cout << "\nUnordered Map:\n";
+    for (const auto& pair : m) {
+        std::cout << "  " << pair.first << " -> " << pair.second << std::endl;
+    }
 
     return 0;
 }
@@ -312,17 +414,6 @@ int main() {
 
 ---
 
-## 最佳实践
-
-1. **随机生成**: 大多数情况使用 random_generator
-2. **名称生成**: 需要可重现性时使用 name_generator
-3. **存储**: UUID 占用 16 字节
-4. **性能**: 生成速度快
-5. **唯一性**: 随机 UUID 冲突概率极低
-
----
-
 ## 参考资源
 
-- [Boost.Uuid 官方文档](https://www.boost.org/doc/libs/1_90_0/libs/uuid/doc/uuid.html)
-- [RFC 4122](https://tools.ietf.org/html/rfc4122)
+- [Boost.UUID 官方文档](https://www.boost.org/doc/libs/1_90_0/libs/uuid/doc/html/index.html)
