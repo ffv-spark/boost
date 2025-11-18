@@ -2,11 +2,11 @@
 
 ## 概述
 
-Boost.Tuple 提供固定大小的异构元素集合。
+Boost.Tuple 提供固定大小的异构容器，可以存储不同类型的值。
 
 **类型**: 仅头文件库
 
-**注意**: C++11 已引入 `std::tuple`
+**注意**: C++11 引入了 std::tuple，优先使用标准库版本
 
 ---
 
@@ -19,16 +19,19 @@ Boost.Tuple 提供固定大小的异构元素集合。
 #include <string>
 
 int main() {
+    using boost::tuple;
+    using boost::make_tuple;
+
     // 创建元组
-    boost::tuple<int, std::string, double> person(25, "Alice", 5000.0);
+    tuple<std::string, int, double> person("Alice", 30, 65.5);
 
-    // 访问元素
-    std::cout << "Age: " << boost::get<0>(person) << std::endl;
-    std::cout << "Name: " << boost::get<1>(person) << std::endl;
-    std::cout << "Salary: " << boost::get<2>(person) << std::endl;
+    std::cout << "姓名: " << person.get<0>() << std::endl;
+    std::cout << "年龄: " << person.get<1>() << std::endl;
+    std::cout << "体重: " << person.get<2>() << "kg" << std::endl;
 
-    // 输出元组
-    std::cout << "Tuple: " << person << std::endl;
+    // 使用 make_tuple
+    auto data = make_tuple(42, 3.14, "hello");
+    std::cout << "\n元组: " << data << std::endl;
 
     return 0;
 }
@@ -36,7 +39,73 @@ int main() {
 
 ---
 
-## 元组操作
+## 创建元组
+
+```cpp
+#include <boost/tuple/tuple.hpp>
+#include <iostream>
+#include <string>
+
+int main() {
+    using boost::tuple;
+    using boost::make_tuple;
+
+    // 直接构造
+    tuple<int, double, std::string> t1(42, 3.14, "hello");
+
+    // 使用 make_tuple
+    auto t2 = make_tuple(10, 20, 30);
+
+    // 默认构造
+    tuple<int, double> t3;  // (0, 0.0)
+
+    // 拷贝构造
+    tuple<int, double> t4(t3);
+
+    std::cout << "t1: " << t1.get<0>() << ", "
+              << t1.get<1>() << ", " << t1.get<2>() << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## tie 函数
+
+```cpp
+#include <boost/tuple/tuple.hpp>
+#include <iostream>
+#include <string>
+
+// 返回多个值
+boost::tuple<int, int, int> divide_with_remainder(int dividend, int divisor) {
+    return boost::make_tuple(dividend / divisor, dividend % divisor, dividend);
+}
+
+int main() {
+    using boost::tie;
+    using boost::ignore;
+
+    // 使用 tie 解包元组
+    int quotient, remainder, original;
+    tie(quotient, remainder, original) = divide_with_remainder(17, 5);
+
+    std::cout << original << " / 5 = " << quotient
+              << " 余 " << remainder << std::endl;
+
+    // 忽略某些值
+    int q;
+    tie(q, ignore, ignore) = divide_with_remainder(20, 3);
+    std::cout << "商: " << q << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 比较操作
 
 ```cpp
 #include <boost/tuple/tuple.hpp>
@@ -44,23 +113,18 @@ int main() {
 #include <iostream>
 
 int main() {
-    boost::tuple<int, int> t1(1, 2);
-    boost::tuple<int, int> t2(1, 3);
+    using boost::tuple;
+    using boost::make_tuple;
 
-    // 比较
-    std::cout << "t1 < t2: " << (t1 < t2) << std::endl;
+    auto t1 = make_tuple(1, 2, 3);
+    auto t2 = make_tuple(1, 2, 3);
+    auto t3 = make_tuple(1, 2, 4);
+
+    std::cout << std::boolalpha;
     std::cout << "t1 == t2: " << (t1 == t2) << std::endl;
-
-    // make_tuple
-    auto t3 = boost::make_tuple(10, "Hello", 3.14);
-
-    // tie
-    int x;
-    std::string s;
-    double d;
-    boost::tie(x, s, d) = t3;
-
-    std::cout << "x=" << x << ", s=" << s << ", d=" << d << std::endl;
+    std::cout << "t1 != t3: " << (t1 != t3) << std::endl;
+    std::cout << "t1 < t3: " << (t1 < t3) << std::endl;
+    std::cout << "t1 <= t2: " << (t1 <= t2) << std::endl;
 
     return 0;
 }
@@ -68,26 +132,74 @@ int main() {
 
 ---
 
-## 函数返回多值
+## 返回多个值
 
 ```cpp
 #include <boost/tuple/tuple.hpp>
 #include <iostream>
 #include <string>
+#include <cmath>
 
-boost::tuple<bool, std::string, int> process_data() {
-    return boost::make_tuple(true, "Success", 42);
+// 返回平均值、最小值、最大值
+boost::tuple<double, int, int> statistics(const int* arr, int size) {
+    int min_val = arr[0];
+    int max_val = arr[0];
+    double sum = 0;
+
+    for (int i = 0; i < size; ++i) {
+        sum += arr[i];
+        if (arr[i] < min_val) min_val = arr[i];
+        if (arr[i] > max_val) max_val = arr[i];
+    }
+
+    return boost::make_tuple(sum / size, min_val, max_val);
 }
 
 int main() {
-    bool success;
-    std::string message;
-    int result;
+    using boost::tie;
 
-    boost::tie(success, message, result) = process_data();
+    int numbers[] = {5, 2, 8, 1, 9, 3, 7};
+    int size = sizeof(numbers) / sizeof(numbers[0]);
 
-    if (success) {
-        std::cout << message << ": " << result << std::endl;
+    double avg;
+    int min_v, max_v;
+
+    tie(avg, min_v, max_v) = statistics(numbers, size);
+
+    std::cout << "平均值: " << avg << std::endl;
+    std::cout << "最小值: " << min_v << std::endl;
+    std::cout << "最大值: " << max_v << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 元组容器
+
+```cpp
+#include <boost/tuple/tuple.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+
+int main() {
+    using boost::tuple;
+    using boost::make_tuple;
+
+    // 元组的 vector
+    std::vector<tuple<std::string, int, double>> students;
+
+    students.push_back(make_tuple("Alice", 20, 85.5));
+    students.push_back(make_tuple("Bob", 22, 90.0));
+    students.push_back(make_tuple("Charlie", 21, 78.5));
+
+    std::cout << "学生列表:\n";
+    for (const auto& student : students) {
+        std::cout << "  " << student.get<0>()
+                  << ", " << student.get<1>() << "岁"
+                  << ", 成绩: " << student.get<2>() << std::endl;
     }
 
     return 0;
@@ -96,23 +208,26 @@ int main() {
 
 ---
 
-## 与 std::tuple 对比
+## 与 std::pair 比较
 
 ```cpp
 #include <boost/tuple/tuple.hpp>
-#include <tuple>
 #include <iostream>
+#include <utility>
 
 int main() {
-    // Boost.Tuple
-    auto b_t = boost::make_tuple(1, "hello", 3.14);
-    std::cout << boost::get<0>(b_t) << std::endl;
+    using boost::tuple;
+    using boost::make_tuple;
 
-    // std::tuple (C++11)
-    auto s_t = std::make_tuple(1, "hello", 3.14);
-    std::cout << std::get<0>(s_t) << std::endl;
+    // std::pair 只能存储两个元素
+    std::pair<int, std::string> p(42, "answer");
 
-    // C++11+ 推荐使用 std::tuple
+    // tuple 可以存储任意数量的元素
+    auto t = make_tuple(42, "answer", 3.14, 'x');
+
+    std::cout << "pair: (" << p.first << ", " << p.second << ")" << std::endl;
+    std::cout << "tuple: (" << t.get<0>() << ", " << t.get<1>()
+              << ", " << t.get<2>() << ", " << t.get<3>() << ")" << std::endl;
 
     return 0;
 }
@@ -122,4 +237,5 @@ int main() {
 
 ## 参考资源
 
-- [Boost.Tuple 官方文档](https://www.boost.org/doc/libs/1_90_0/libs/tuple/doc/tuple_users_guide.html)
+- [Boost.Tuple 官方文档](https://www.boost.org/doc/libs/1_90_0/libs/tuple/doc/html/index.html)
+- [std::tuple 参考](https://en.cppreference.com/w/cpp/utility/tuple)
