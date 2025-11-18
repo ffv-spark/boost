@@ -1,8 +1,8 @@
-# Boost.Signals2 - 信号/槽机制
+# Boost.Signals2 - 信号槽库
 
 ## 概述
 
-Boost.Signals2 实现了线程安全的信号/槽机制，用于对象间解耦通信。
+Boost.Signals2 提供线程安全的信号槽机制，实现观察者模式。
 
 **类型**: 仅头文件库
 
@@ -15,19 +15,15 @@ Boost.Signals2 实现了线程安全的信号/槽机制，用于对象间解耦�
 #include <iostream>
 
 void hello() {
-    std::cout << "Hello, ";
-}
-
-void world() {
-    std::cout << "World!" << std::endl;
+    std::cout << "Hello, World!" << std::endl;
 }
 
 int main() {
+    // 创建信号
     boost::signals2::signal<void()> sig;
 
-    // 连接槽函数
+    // 连接槽
     sig.connect(&hello);
-    sig.connect(&world);
 
     // 触发信号
     sig();
@@ -38,27 +34,33 @@ int main() {
 
 ---
 
-## 带参数的信号
+## 基本信号
 
 ```cpp
 #include <boost/signals2.hpp>
 #include <iostream>
-#include <string>
+
+void print_number(int n) {
+    std::cout << "数字: " << n << std::endl;
+}
+
+void print_square(int n) {
+    std::cout << "平方: " << n * n << std::endl;
+}
 
 int main() {
-    boost::signals2::signal<void(const std::string&, int)> sig;
+    boost::signals2::signal<void(int)> sig;
 
-    // 连接槽
-    sig.connect([](const std::string& msg, int value) {
-        std::cout << msg << ": " << value << std::endl;
-    });
+    // 连接多个槽
+    sig.connect(&print_number);
+    sig.connect(&print_square);
 
-    sig.connect([](const std::string& msg, int value) {
-        std::cout << "Double: " << (value * 2) << std::endl;
-    });
+    // 触发信号
+    std::cout << "触发信号(5):\n";
+    sig(5);
 
-    // 触发
-    sig("Number", 42);
+    std::cout << "\n触发信号(10):\n";
+    sig(10);
 
     return 0;
 }
@@ -66,39 +68,25 @@ int main() {
 
 ---
 
-## 返回值处理
+## Lambda 函数
 
 ```cpp
 #include <boost/signals2.hpp>
 #include <iostream>
-#include <vector>
-
-int double_value(int x) { return x * 2; }
-int triple_value(int x) { return x * 3; }
 
 int main() {
-    boost::signals2::signal<int(int)> sig;
+    boost::signals2::signal<void(std::string)> sig;
 
-    sig.connect(&double_value);
-    sig.connect(&triple_value);
+    // 连接 lambda
+    sig.connect([](const std::string& msg) {
+        std::cout << "Lambda 1: " << msg << std::endl;
+    });
 
-    // 默认返回最后一个槽的结果
-    auto result = sig(10);
-    if (result) {
-        std::cout << "Last result: " << *result << std::endl;
-    }
+    sig.connect([](const std::string& msg) {
+        std::cout << "Lambda 2: " << msg << " (长度: " << msg.length() << ")" << std::endl;
+    });
 
-    // 自定义合并器：收集所有结果
-    boost::signals2::signal<int(int),
-        boost::signals2::optional_last_value<int>,
-        int,
-        std::less<int>,
-        boost::function<int(int)>,
-        boost::function<void(const boost::signals2::connection&)>,
-        boost::signals2::mutex> sig2;
-
-    sig2.connect(&double_value);
-    sig2.connect(&triple_value);
+    sig("Hello, Signals!");
 
     return 0;
 }
@@ -112,32 +100,29 @@ int main() {
 #include <boost/signals2.hpp>
 #include <iostream>
 
+void slot1() {
+    std::cout << "槽1被调用" << std::endl;
+}
+
+void slot2() {
+    std::cout << "槽2被调用" << std::endl;
+}
+
 int main() {
-    boost::signals2::signal<void(int)> sig;
+    boost::signals2::signal<void()> sig;
 
-    // 连接并保存连接对象
-    boost::signals2::connection conn1 = sig.connect([](int x) {
-        std::cout << "Slot 1: " << x << std::endl;
-    });
+    // 保存连接
+    auto conn1 = sig.connect(&slot1);
+    auto conn2 = sig.connect(&slot2);
 
-    auto conn2 = sig.connect([](int x) {
-        std::cout << "Slot 2: " << x << std::endl;
-    });
-
-    sig(1);  // 两个槽都会被调用
+    std::cout << "第一次触发:\n";
+    sig();
 
     // 断开连接
     conn1.disconnect();
 
-    sig(2);  // 只有 Slot 2 被调用
-
-    // 阻塞连接
-    {
-        boost::signals2::shared_connection_block blocker(conn2);
-        sig(3);  // 没有输出
-    }
-
-    sig(4);  // Slot 2 恢复
+    std::cout << "\n断开槽1后:\n";
+    sig();
 
     return 0;
 }
@@ -145,91 +130,35 @@ int main() {
 
 ---
 
-## 实用示例
-
-### 观察者模式
+## 返回值合并
 
 ```cpp
 #include <boost/signals2.hpp>
 #include <iostream>
-#include <string>
+#include <vector>
 
-class Subject {
-public:
-    using Observer = boost::signals2::signal<void(const std::string&)>;
-
-    boost::signals2::connection subscribe(const Observer::slot_type& slot) {
-        return on_change_.connect(slot);
-    }
-
-    void set_data(const std::string& data) {
-        data_ = data;
-        on_change_(data_);
-    }
-
-private:
-    std::string data_;
-    Observer on_change_;
-};
-
-class Observer1 {
-public:
-    void update(const std::string& data) {
-        std::cout << "Observer1 收到: " << data << std::endl;
-    }
-};
-
-class Observer2 {
-public:
-    void update(const std::string& data) {
-        std::cout << "Observer2 收到: " << data << std::endl;
-    }
-};
-
-int main() {
-    Subject subject;
-    Observer1 obs1;
-    Observer2 obs2;
-
-    subject.subscribe(boost::bind(&Observer1::update, &obs1, _1));
-    subject.subscribe(boost::bind(&Observer2::update, &obs2, _1));
-
-    subject.set_data("Hello");
-    subject.set_data("World");
-
-    return 0;
+int compute1(int x) {
+    return x * 2;
 }
-```
 
-### GUI 按钮
+int compute2(int x) {
+    return x + 10;
+}
 
-```cpp
-#include <boost/signals2.hpp>
-#include <iostream>
-
-class Button {
-public:
-    boost::signals2::signal<void()> clicked;
-
-    void click() {
-        std::cout << "Button clicked!" << std::endl;
-        clicked();
-    }
-};
+int compute3(int x) {
+    return x * x;
+}
 
 int main() {
-    Button button;
+    // 默认返回最后一个槽的值
+    boost::signals2::signal<int(int)> sig;
 
-    // 连接多个处理器
-    button.clicked.connect([]() {
-        std::cout << "Handler 1" << std::endl;
-    });
+    sig.connect(&compute1);
+    sig.connect(&compute2);
+    sig.connect(&compute3);
 
-    button.clicked.connect([]() {
-        std::cout << "Handler 2" << std::endl;
-    });
-
-    button.click();
+    int result = sig(5);
+    std::cout << "最后返回值: " << result << std::endl;  // 25 (5*5)
 
     return 0;
 }
@@ -237,54 +166,120 @@ int main() {
 
 ---
 
-## 自动断开连接
+## 自定义合并器
+
+```cpp
+#include <boost/signals2.hpp>
+#include <iostream>
+#include <vector>
+#include <numeric>
+
+// 求和合并器
+template<typename T>
+struct sum_combiner {
+    typedef T result_type;
+
+    template<typename InputIterator>
+    T operator()(InputIterator first, InputIterator last) const {
+        if (first == last) return T();
+        return std::accumulate(first, last, T());
+    }
+};
+
+int add_ten(int x) { return x + 10; }
+int multiply_two(int x) { return x * 2; }
+int square(int x) { return x * x; }
+
+int main() {
+    // 使用求和合并器
+    boost::signals2::signal<int(int), sum_combiner<int>> sig;
+
+    sig.connect(&add_ten);
+    sig.connect(&multiply_two);
+    sig.connect(&square);
+
+    int result = sig(5);
+    std::cout << "所有返回值之和: " << result << std::endl;  // 15 + 10 + 25 = 50
+
+    return 0;
+}
+```
+
+---
+
+## 槽分组
+
+```cpp
+#include <boost/signals2.hpp>
+#include <iostream>
+
+void high_priority() {
+    std::cout << "高优先级" << std::endl;
+}
+
+void normal_priority() {
+    std::cout << "普通优先级" << std::endl;
+}
+
+void low_priority() {
+    std::cout << "低优先级" << std::endl;
+}
+
+int main() {
+    boost::signals2::signal<void()> sig;
+
+    // 按组连接
+    sig.connect(2, &low_priority);     // 组2
+    sig.connect(0, &high_priority);    // 组0
+    sig.connect(1, &normal_priority);  // 组1
+
+    std::cout << "触发信号（按组顺序）:\n";
+    sig();
+
+    return 0;
+}
+```
+
+---
+
+## 自动断开
 
 ```cpp
 #include <boost/signals2.hpp>
 #include <iostream>
 #include <memory>
 
-class Listener {
+class Button {
 public:
-    Listener(int id) : id_(id) {
-        std::cout << "Listener " << id_ << " created" << std::endl;
-    }
+    boost::signals2::signal<void()> onClick;
+};
 
-    ~Listener() {
-        std::cout << "Listener " << id_ << " destroyed" << std::endl;
+class Window {
+public:
+    void handleClick() {
+        std::cout << "窗口处理点击" << std::endl;
     }
-
-    void on_event() {
-        std::cout << "Listener " << id_ << " handling event" << std::endl;
-    }
-
-private:
-    int id_;
 };
 
 int main() {
-    boost::signals2::signal<void()> sig;
+    Button button;
+    auto window = std::make_shared<Window>();
 
-    auto listener1 = std::make_shared<Listener>(1);
-    auto listener2 = std::make_shared<Listener>(2);
+    // 使用 weak_ptr 跟踪对象
+    button.onClick.connect(
+        boost::signals2::signal<void()>::slot_type(
+            &Window::handleClick, window.get()
+        ).track(window)
+    );
 
-    // 使用 track 自动管理生命周期
-    sig.connect(boost::signals2::signal<void()>::slot_type(
-        &Listener::on_event, listener1.get()
-    ).track(listener1));
+    std::cout << "窗口存在时点击:\n";
+    button.onClick();
 
-    sig.connect(boost::signals2::signal<void()>::slot_type(
-        &Listener::on_event, listener2.get()
-    ).track(listener2));
+    // 释放窗口
+    window.reset();
 
-    std::cout << "\n触发事件 1:" << std::endl;
-    sig();
-
-    // 销毁 listener1
-    listener1.reset();
-
-    std::cout << "\n触发事件 2:" << std::endl;
-    sig();  // 只有 listener2 响应
+    std::cout << "\n窗口释放后点击:\n";
+    button.onClick();  // 不会调用槽
 
     return 0;
 }
@@ -292,13 +287,99 @@ int main() {
 
 ---
 
-## 最佳实践
+## 线程安全
 
-1. **线程安全**: Signals2 是线程安全的
-2. **连接管理**: 保存重要的连接对象
-3. **自动断开**: 使用 track 管理生命周期
-4. **性能**: 避免过多的信号连接
-5. **替代方案**: 考虑使用观察者模式或回调
+```cpp
+#include <boost/signals2.hpp>
+#include <iostream>
+#include <thread>
+#include <chrono>
+
+int main() {
+    boost::signals2::signal<void(int)> sig;
+
+    sig.connect([](int id) {
+        std::cout << "线程 " << id << " 收到信号" << std::endl;
+    });
+
+    // 从多个线程触发信号（Signals2 是线程安全的）
+    std::thread t1([&sig]() {
+        for (int i = 0; i < 3; ++i) {
+            sig(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    });
+
+    std::thread t2([&sig]() {
+        for (int i = 0; i < 3; ++i) {
+            sig(2);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    });
+
+    t1.join();
+    t2.join();
+
+    return 0;
+}
+```
+
+---
+
+## GUI 事件示例
+
+```cpp
+#include <boost/signals2.hpp>
+#include <iostream>
+#include <string>
+
+class Button {
+public:
+    boost::signals2::signal<void()> clicked;
+    boost::signals2::signal<void()> hovered;
+
+    void click() {
+        std::cout << "[按钮被点击]" << std::endl;
+        clicked();
+    }
+
+    void hover() {
+        std::cout << "[鼠标悬停]" << std::endl;
+        hovered();
+    }
+};
+
+class Application {
+public:
+    void onButtonClicked() {
+        std::cout << "  应用程序处理点击" << std::endl;
+    }
+
+    void onButtonHovered() {
+        std::cout << "  应用程序处理悬停" << std::endl;
+    }
+};
+
+int main() {
+    Button button;
+    Application app;
+
+    // 连接事件处理器
+    button.clicked.connect(
+        boost::bind(&Application::onButtonClicked, &app)
+    );
+    button.hovered.connect(
+        boost::bind(&Application::onButtonHovered, &app)
+    );
+
+    // 模拟事件
+    button.click();
+    button.hover();
+    button.click();
+
+    return 0;
+}
+```
 
 ---
 

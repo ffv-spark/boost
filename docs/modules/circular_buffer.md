@@ -1,8 +1,8 @@
-# Boost.Circular_Buffer - 循环缓冲区
+# Boost.CircularBuffer - 循环缓冲区库
 
 ## 概述
 
-Boost.Circular_Buffer 提供固定大小的循环缓冲区，自动覆盖最旧的元素。
+Boost.CircularBuffer 提供固定大小的循环缓冲区，当缓冲区满时自动覆盖最旧的元素。
 
 **类型**: 仅头文件库
 
@@ -15,27 +15,22 @@ Boost.Circular_Buffer 提供固定大小的循环缓冲区，自动覆盖最旧�
 #include <iostream>
 
 int main() {
-    // 创建容量为3的循环缓冲区
-    boost::circular_buffer<int> cb(3);
+    // 创建容量为5的循环缓冲区
+    boost::circular_buffer<int> cb(5);
 
+    // 添加元素
     cb.push_back(1);
     cb.push_back(2);
     cb.push_back(3);
 
-    std::cout << "Buffer: ";
+    std::cout << "缓冲区内容: ";
     for (int x : cb) {
         std::cout << x << " ";
     }
     std::cout << std::endl;
 
-    // 添加第4个元素，覆盖第1个
-    cb.push_back(4);
-
-    std::cout << "After push: ";
-    for (int x : cb) {
-        std::cout << x << " ";  // 输出: 2 3 4
-    }
-    std::cout << std::endl;
+    std::cout << "大小: " << cb.size() << std::endl;
+    std::cout << "容量: " << cb.capacity() << std::endl;
 
     return 0;
 }
@@ -52,25 +47,17 @@ int main() {
 int main() {
     boost::circular_buffer<int> cb(5);
 
-    // 添加元素
-    cb.push_back(1);
-    cb.push_back(2);
-    cb.push_front(0);  // [0, 1, 2]
+    // push_back
+    for (int i = 1; i <= 7; ++i) {
+        cb.push_back(i);
+        std::cout << "添加 " << i << ": ";
+        for (int x : cb) {
+            std::cout << x << " ";
+        }
+        std::cout << std::endl;
+    }
 
-    // 访问元素
-    std::cout << "Front: " << cb.front() << std::endl;  // 0
-    std::cout << "Back: " << cb.back() << std::endl;   // 2
-    std::cout << "At[1]: " << cb[1] << std::endl;      // 1
-
-    // 大小信息
-    std::cout << "Size: " << cb.size() << std::endl;
-    std::cout << "Capacity: " << cb.capacity() << std::endl;
-    std::cout << "Full: " << cb.full() << std::endl;
-    std::cout << "Empty: " << cb.empty() << std::endl;
-
-    // 删除元素
-    cb.pop_front();  // [1, 2]
-    cb.pop_back();   // [1]
+    // 注意：只保留最后5个元素（3,4,5,6,7）
 
     return 0;
 }
@@ -78,144 +65,39 @@ int main() {
 
 ---
 
-## 实用示例
-
-### 日志缓冲
+## 前后访问
 
 ```cpp
 #include <boost/circular_buffer.hpp>
 #include <iostream>
-#include <string>
-#include <ctime>
-
-class LogBuffer {
-public:
-    LogBuffer(size_t capacity) : buffer_(capacity) {}
-
-    void add_log(const std::string& message) {
-        std::time_t now = std::time(nullptr);
-        char timestamp[20];
-        std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S",
-                      std::localtime(&now));
-
-        std::string log_entry = std::string(timestamp) + " - " + message;
-        buffer_.push_back(log_entry);
-    }
-
-    void print_recent_logs(size_t count = 0) {
-        if (count == 0 || count > buffer_.size()) {
-            count = buffer_.size();
-        }
-
-        std::cout << "最近 " << count << " 条日志:\n";
-        auto it = buffer_.end() - count;
-        for (; it != buffer_.end(); ++it) {
-            std::cout << *it << std::endl;
-        }
-    }
-
-private:
-    boost::circular_buffer<std::string> buffer_;
-};
 
 int main() {
-    LogBuffer logger(5);  // 只保留最近5条日志
+    boost::circular_buffer<int> cb(5);
 
-    for (int i = 1; i <= 8; ++i) {
-        logger.add_log("Event " + std::to_string(i));
+    for (int i = 1; i <= 5; ++i) {
+        cb.push_back(i);
     }
 
-    logger.print_recent_logs();
+    // 访问元素
+    std::cout << "第一个元素: " << cb.front() << std::endl;
+    std::cout << "最后元素: " << cb.back() << std::endl;
+    std::cout << "索引[2]: " << cb[2] << std::endl;
 
-    return 0;
-}
-```
-
-### 移动平均
-
-```cpp
-#include <boost/circular_buffer.hpp>
-#include <iostream>
-#include <numeric>
-
-class MovingAverage {
-public:
-    MovingAverage(size_t window_size) : buffer_(window_size) {}
-
-    void add_value(double value) {
-        buffer_.push_back(value);
+    // push_front
+    cb.push_front(0);
+    std::cout << "前端添加0后: ";
+    for (int x : cb) {
+        std::cout << x << " ";
     }
+    std::cout << std::endl;
 
-    double get_average() const {
-        if (buffer_.empty()) {
-            return 0.0;
-        }
-        double sum = std::accumulate(buffer_.begin(), buffer_.end(), 0.0);
-        return sum / buffer_.size();
+    // pop_back
+    cb.pop_back();
+    std::cout << "后端删除后: ";
+    for (int x : cb) {
+        std::cout << x << " ";
     }
-
-private:
-    boost::circular_buffer<double> buffer_;
-};
-
-int main() {
-    MovingAverage ma(5);  // 5个数据的移动平均
-
-    std::vector<double> data = {10, 20, 30, 40, 50, 60, 70, 80};
-
-    for (double value : data) {
-        ma.add_value(value);
-        std::cout << "Value: " << value
-                  << ", Moving Avg: " << ma.get_average()
-                  << std::endl;
-    }
-
-    return 0;
-}
-```
-
-### 最近访问记录
-
-```cpp
-#include <boost/circular_buffer.hpp>
-#include <iostream>
-#include <string>
-
-class RecentHistory {
-public:
-    RecentHistory(size_t size) : history_(size) {}
-
-    void add(const std::string& item) {
-        // 避免重复
-        auto it = std::find(history_.begin(), history_.end(), item);
-        if (it != history_.end()) {
-            history_.erase(it);
-        }
-        history_.push_back(item);
-    }
-
-    void print() const {
-        std::cout << "最近访问:\n";
-        for (auto it = history_.rbegin(); it != history_.rend(); ++it) {
-            std::cout << "  - " << *it << std::endl;
-        }
-    }
-
-private:
-    boost::circular_buffer<std::string> history_;
-};
-
-int main() {
-    RecentHistory history(5);
-
-    history.add("index.html");
-    history.add("about.html");
-    history.add("contact.html");
-    history.add("index.html");  // 重复访问
-    history.add("blog.html");
-    history.add("products.html");
-
-    history.print();
+    std::cout << std::endl;
 
     return 0;
 }
@@ -231,29 +113,31 @@ int main() {
 #include <algorithm>
 
 int main() {
-    boost::circular_buffer<int> cb(5);
+    boost::circular_buffer<int> cb(10);
 
-    for (int i = 1; i <= 7; ++i) {
+    for (int i = 1; i <= 10; ++i) {
         cb.push_back(i);
     }
 
-    // 正向遍历
-    std::cout << "Forward: ";
+    // 正向迭代
+    std::cout << "正向: ";
     for (auto it = cb.begin(); it != cb.end(); ++it) {
         std::cout << *it << " ";
     }
     std::cout << std::endl;
 
-    // 反向遍历
-    std::cout << "Reverse: ";
+    // 反向迭代
+    std::cout << "反向: ";
     for (auto it = cb.rbegin(); it != cb.rend(); ++it) {
         std::cout << *it << " ";
     }
     std::cout << std::endl;
 
     // 使用算法
-    auto max_it = std::max_element(cb.begin(), cb.end());
-    std::cout << "Max: " << *max_it << std::endl;
+    auto it = std::find(cb.begin(), cb.end(), 5);
+    if (it != cb.end()) {
+        std::cout << "找到5在位置: " << std::distance(cb.begin(), it) << std::endl;
+    }
 
     return 0;
 }
@@ -261,28 +145,31 @@ int main() {
 
 ---
 
-## 性能特性
+## 容量管理
 
 ```cpp
 #include <boost/circular_buffer.hpp>
 #include <iostream>
-#include <chrono>
 
 int main() {
-    const size_t size = 1000000;
-    boost::circular_buffer<int> cb(size);
+    boost::circular_buffer<int> cb(5);
 
-    auto start = std::chrono::high_resolution_clock::now();
+    std::cout << "初始容量: " << cb.capacity() << std::endl;
+    std::cout << "初始大小: " << cb.size() << std::endl;
+    std::cout << "是否为空: " << std::boolalpha << cb.empty() << std::endl;
+    std::cout << "是否已满: " << cb.full() << std::endl;
 
-    for (int i = 0; i < size * 2; ++i) {
+    for (int i = 1; i <= 5; ++i) {
         cb.push_back(i);
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "\n添加5个元素后:" << std::endl;
+    std::cout << "大小: " << cb.size() << std::endl;
+    std::cout << "是否已满: " << cb.full() << std::endl;
 
-    std::cout << "插入 " << (size * 2) << " 个元素耗时: "
-              << duration.count() << " ms" << std::endl;
+    // 调整容量
+    cb.set_capacity(10);
+    std::cout << "\n调整容量后: " << cb.capacity() << std::endl;
 
     return 0;
 }
@@ -290,16 +177,232 @@ int main() {
 
 ---
 
-## 最佳实践
+## 滑动窗口
 
-1. **固定容量**: 适合需要固定大小缓冲区的场景
-2. **性能**: O(1) 插入和删除
-3. **线程安全**: 需要外部同步
-4. **内存**: 预分配固定内存
-5. **用途**: 日志、历史记录、滑动窗口
+```cpp
+#include <boost/circular_buffer.hpp>
+#include <iostream>
+#include <numeric>
+
+int main() {
+    const int window_size = 5;
+    boost::circular_buffer<double> window(window_size);
+
+    std::vector<double> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+    std::cout << "滑动窗口平均值:\n";
+    for (double value : data) {
+        window.push_back(value);
+
+        if (window.full()) {
+            double sum = std::accumulate(window.begin(), window.end(), 0.0);
+            double avg = sum / window.size();
+            std::cout << "  数据点 " << value << ": 平均 = " << avg << std::endl;
+        }
+    }
+
+    return 0;
+}
+```
+
+---
+
+## 日志缓冲
+
+```cpp
+#include <boost/circular_buffer.hpp>
+#include <iostream>
+#include <string>
+#include <chrono>
+#include <ctime>
+
+struct LogEntry {
+    std::string message;
+    std::time_t timestamp;
+
+    LogEntry(const std::string& msg)
+        : message(msg), timestamp(std::time(nullptr)) {}
+};
+
+class Logger {
+public:
+    Logger(size_t capacity) : buffer_(capacity) {}
+
+    void log(const std::string& message) {
+        buffer_.push_back(LogEntry(message));
+    }
+
+    void print_recent() {
+        std::cout << "最近的日志:\n";
+        for (const auto& entry : buffer_) {
+            char time_str[100];
+            std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S",
+                         std::localtime(&entry.timestamp));
+            std::cout << "  [" << time_str << "] " << entry.message << std::endl;
+        }
+    }
+
+private:
+    boost::circular_buffer<LogEntry> buffer_;
+};
+
+int main() {
+    Logger logger(5);  // 只保留最近5条日志
+
+    logger.log("应用程序启动");
+    logger.log("连接数据库");
+    logger.log("加载配置");
+    logger.log("启动服务器");
+    logger.log("准备就绪");
+    logger.log("接收请求");  // 覆盖"应用程序启动"
+    logger.log("处理请求");  // 覆盖"连接数据库"
+
+    logger.print_recent();
+
+    return 0;
+}
+```
+
+---
+
+## 性能监控
+
+```cpp
+#include <boost/circular_buffer.hpp>
+#include <iostream>
+#include <random>
+#include <numeric>
+
+struct Metric {
+    double cpu_usage;
+    double memory_usage;
+};
+
+int main() {
+    boost::circular_buffer<Metric> metrics(60);  // 保留60秒的数据
+
+    // 模拟数据收集
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> cpu_dist(10.0, 90.0);
+    std::uniform_real_distribution<> mem_dist(30.0, 80.0);
+
+    for (int i = 0; i < 100; ++i) {
+        metrics.push_back({cpu_dist(gen), mem_dist(gen)});
+    }
+
+    // 计算统计
+    double avg_cpu = std::accumulate(metrics.begin(), metrics.end(), 0.0,
+        [](double sum, const Metric& m) { return sum + m.cpu_usage; }) / metrics.size();
+
+    double avg_mem = std::accumulate(metrics.begin(), metrics.end(), 0.0,
+        [](double sum, const Metric& m) { return sum + m.memory_usage; }) / metrics.size();
+
+    std::cout << "最近60秒平均值:\n";
+    std::cout << "  CPU: " << avg_cpu << "%\n";
+    std::cout << "  内存: " << avg_mem << "%\n";
+
+    return 0;
+}
+```
+
+---
+
+## 固定大小队列
+
+```cpp
+#include <boost/circular_buffer.hpp>
+#include <iostream>
+#include <string>
+
+template<typename T>
+class FixedQueue {
+public:
+    FixedQueue(size_t capacity) : buffer_(capacity) {}
+
+    void push(const T& item) {
+        buffer_.push_back(item);
+    }
+
+    T pop() {
+        if (buffer_.empty()) {
+            throw std::runtime_error("队列为空");
+        }
+        T item = buffer_.front();
+        buffer_.pop_front();
+        return item;
+    }
+
+    bool empty() const {
+        return buffer_.empty();
+    }
+
+    size_t size() const {
+        return buffer_.size();
+    }
+
+private:
+    boost::circular_buffer<T> buffer_;
+};
+
+int main() {
+    FixedQueue<std::string> queue(5);
+
+    // 添加元素
+    for (int i = 1; i <= 7; ++i) {
+        queue.push("任务" + std::to_string(i));
+        std::cout << "添加任务" << i << ", 队列大小: " << queue.size() << std::endl;
+    }
+
+    // 处理元素
+    std::cout << "\n处理任务:\n";
+    while (!queue.empty()) {
+        std::cout << "  处理: " << queue.pop() << std::endl;
+    }
+
+    return 0;
+}
+```
+
+---
+
+## 清空和重置
+
+```cpp
+#include <boost/circular_buffer.hpp>
+#include <iostream>
+
+int main() {
+    boost::circular_buffer<int> cb(5);
+
+    for (int i = 1; i <= 5; ++i) {
+        cb.push_back(i);
+    }
+
+    std::cout << "初始: ";
+    for (int x : cb) std::cout << x << " ";
+    std::cout << std::endl;
+
+    // 清空
+    cb.clear();
+    std::cout << "清空后大小: " << cb.size() << std::endl;
+    std::cout << "清空后容量: " << cb.capacity() << std::endl;
+
+    // 重新添加
+    for (int i = 10; i <= 15; ++i) {
+        cb.push_back(i);
+    }
+
+    std::cout << "重新添加: ";
+    for (int x : cb) std::cout << x << " ";
+    std::cout << std::endl;
+
+    return 0;
+}
+```
 
 ---
 
 ## 参考资源
 
-- [Boost.Circular_Buffer 官方文档](https://www.boost.org/doc/libs/1_90_0/doc/html/circular_buffer.html)
+- [Boost.CircularBuffer 官方文档](https://www.boost.org/doc/libs/1_90_0/doc/html/circular_buffer.html)

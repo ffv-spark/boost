@@ -1,16 +1,10 @@
-# Boost.Lexical_Cast - 类型转换库
+# Boost.LexicalCast - 词法转换库
 
 ## 概述
 
-Boost.Lexical_Cast 提供了简单安全的字符串与其他类型之间的转换。
+Boost.LexicalCast 提供简单高效的类型转换，特别是字符串与数值之间的转换。
 
 **类型**: 仅头文件库
-
-**主要特性**:
-- 简洁的转换语法
-- 类型安全
-- 异常处理
-- 自动类型推导
 
 ---
 
@@ -22,425 +16,174 @@ Boost.Lexical_Cast 提供了简单安全的字符串与其他类型之间的转�
 #include <string>
 
 int main() {
+    using boost::lexical_cast;
+    using boost::bad_lexical_cast;
+
     // 字符串转整数
-    int num = boost::lexical_cast<int>("12345");
-    std::cout << "整数: " << num << std::endl;
+    int i = lexical_cast<int>("123");
+    std::cout << "整数: " << i << std::endl;
 
     // 整数转字符串
-    std::string str = boost::lexical_cast<std::string>(42);
-    std::cout << "字符串: " << str << std::endl;
-
-    // 字符串转浮点数
-    double pi = boost::lexical_cast<double>("3.14159");
-    std::cout << "浮点数: " << pi << std::endl;
-
-    return 0;
-}
-```
-
-**编译**:
-```bash
-g++ -std=c++11 example.cpp -o example
-```
-
----
-
-## 基本用法
-
-### 数字与字符串互转
-
-```cpp
-#include <boost/lexical_cast.hpp>
-#include <iostream>
-#include <string>
-
-int main() {
-    // 1. 字符串 -> 整数
-    int i1 = boost::lexical_cast<int>("123");
-    int i2 = boost::lexical_cast<int>("-456");
-
-    // 2. 字符串 -> 浮点数
-    float f = boost::lexical_cast<float>("3.14");
-    double d = boost::lexical_cast<double>("2.71828");
-
-    // 3. 整数 -> 字符串
-    std::string s1 = boost::lexical_cast<std::string>(100);
-    std::string s2 = boost::lexical_cast<std::string>(-200);
-
-    // 4. 浮点数 -> 字符串
-    std::string s3 = boost::lexical_cast<std::string>(3.14159);
-
-    std::cout << "整数: " << i1 << ", " << i2 << std::endl;
-    std::cout << "浮点: " << f << ", " << d << std::endl;
-    std::cout << "字符串: " << s1 << ", " << s2 << ", " << s3 << std::endl;
-
-    return 0;
-}
-```
-
-### 错误处理
-
-```cpp
-#include <boost/lexical_cast.hpp>
-#include <iostream>
-#include <string>
-
-int main() {
-    try {
-        // 有效转换
-        int valid = boost::lexical_cast<int>("123");
-        std::cout << "有效: " << valid << std::endl;
-
-        // 无效转换 - 抛出异常
-        int invalid = boost::lexical_cast<int>("abc");
-
-    } catch (const boost::bad_lexical_cast& e) {
-        std::cerr << "转换失败: " << e.what() << std::endl;
-    }
-
-    // 使用 try_lexical_convert （不抛异常）
-    int result;
-    if (boost::conversion::try_lexical_convert("456", result)) {
-        std::cout << "转换成功: " << result << std::endl;
-    } else {
-        std::cout << "转换失败" << std::endl;
-    }
-
-    if (boost::conversion::try_lexical_convert("xyz", result)) {
-        std::cout << "转换成功: " << result << std::endl;
-    } else {
-        std::cout << "转换失败" << std::endl;
-    }
-
-    return 0;
-}
-```
-
----
-
-## 常见类型转换
-
-### 布尔值
-
-```cpp
-#include <boost/lexical_cast.hpp>
-#include <iostream>
-#include <string>
-
-int main() {
-    // 整数 -> 布尔
-    bool b1 = boost::lexical_cast<bool>("1");   // true
-    bool b2 = boost::lexical_cast<bool>("0");   // false
-
-    // 布尔 -> 字符串
-    std::string s1 = boost::lexical_cast<std::string>(true);   // "1"
-    std::string s2 = boost::lexical_cast<std::string>(false);  // "0"
-
-    std::cout << std::boolalpha;
-    std::cout << "b1: " << b1 << ", b2: " << b2 << std::endl;
-    std::cout << "s1: " << s1 << ", s2: " << s2 << std::endl;
-
-    return 0;
-}
-```
-
-### 字符和字符串
-
-```cpp
-#include <boost/lexical_cast.hpp>
-#include <iostream>
-
-int main() {
-    // 字符 -> 整数
-    int ascii_a = boost::lexical_cast<int>('A');  // 65
-
-    // 单字符字符串 -> 字符
-    char ch = boost::lexical_cast<char>("X");
-
-    // 字符 -> 字符串
-    std::string s = boost::lexical_cast<std::string>('Z');
-
-    std::cout << "ASCII 'A': " << ascii_a << std::endl;
-    std::cout << "字符: " << ch << std::endl;
+    std::string s = lexical_cast<std::string>(456);
     std::cout << "字符串: " << s << std::endl;
 
+    // 浮点数转换
+    double d = lexical_cast<double>("3.14159");
+    std::cout << "浮点数: " << d << std::endl;
+
     return 0;
 }
 ```
 
 ---
 
-## 实用示例
-
-### 命令行参数解析
+## 基本类型转换
 
 ```cpp
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <string>
-#include <map>
 
-class ArgumentParser {
-public:
-    ArgumentParser(int argc, char* argv[]) {
-        for (int i = 1; i < argc; ++i) {
-            std::string arg = argv[i];
-            size_t pos = arg.find('=');
+int main() {
+    using boost::lexical_cast;
 
-            if (pos != std::string::npos) {
-                std::string key = arg.substr(0, pos);
-                std::string value = arg.substr(pos + 1);
-                args_[key] = value;
-            }
-        }
-    }
+    // 数值转字符串
+    std::string s1 = lexical_cast<std::string>(42);
+    std::string s2 = lexical_cast<std::string>(3.14);
+    std::string s3 = lexical_cast<std::string>(true);
 
-    template<typename T>
-    T get(const std::string& key, const T& default_value) const {
-        auto it = args_.find(key);
-        if (it != args_.end()) {
-            try {
-                return boost::lexical_cast<T>(it->second);
-            } catch (const boost::bad_lexical_cast&) {
-                return default_value;
-            }
-        }
-        return default_value;
-    }
+    std::cout << "42 -> \"" << s1 << "\"" << std::endl;
+    std::cout << "3.14 -> \"" << s2 << "\"" << std::endl;
+    std::cout << "true -> \"" << s3 << "\"" << std::endl;
 
-private:
-    std::map<std::string, std::string> args_;
-};
+    // 字符串转数值
+    int i = lexical_cast<int>("100");
+    double d = lexical_cast<double>("2.718");
+    bool b = lexical_cast<bool>("1");
 
-int main(int argc, char* argv[]) {
-    ArgumentParser parser(argc, argv);
-
-    int port = parser.get<int>("port", 8080);
-    std::string host = parser.get<std::string>("host", "localhost");
-    bool debug = parser.get<bool>("debug", false);
-
-    std::cout << "主机: " << host << std::endl;
-    std::cout << "端口: " << port << std::endl;
-    std::cout << "调试: " << (debug ? "开启" : "关闭") << std::endl;
+    std::cout << "\"100\" -> " << i << std::endl;
+    std::cout << "\"2.718\" -> " << d << std::endl;
+    std::cout << "\"1\" -> " << std::boolalpha << b << std::endl;
 
     return 0;
 }
-
-// 使用: ./program host=127.0.0.1 port=9000 debug=1
 ```
 
-### CSV 解析
+---
+
+## 异常处理
 
 ```cpp
 #include <boost/lexical_cast.hpp>
 #include <iostream>
-#include <sstream>
+#include <string>
+
+int main() {
+    using boost::lexical_cast;
+    using boost::bad_lexical_cast;
+
+    try {
+        // 有效转换
+        int i = lexical_cast<int>("123");
+        std::cout << "成功: " << i << std::endl;
+
+        // 无效转换
+        int j = lexical_cast<int>("abc");
+    } catch (const bad_lexical_cast& e) {
+        std::cout << "转换失败: " << e.what() << std::endl;
+    }
+
+    return 0;
+}
+```
+
+---
+
+## 数值范围检查
+
+```cpp
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+#include <string>
+
+int main() {
+    using boost::lexical_cast;
+    using boost::bad_lexical_cast;
+
+    try {
+        // 转换超出范围的数字
+        short s = lexical_cast<short>("100000");
+    } catch (const bad_lexical_cast& e) {
+        std::cout << "数值超出范围: " << e.what() << std::endl;
+    }
+
+    // 正常范围
+    try {
+        short s = lexical_cast<short>("32000");
+        std::cout << "在范围内: " << s << std::endl;
+    } catch (const bad_lexical_cast& e) {
+        std::cout << "错误: " << e.what() << std::endl;
+    }
+
+    return 0;
+}
+```
+
+---
+
+## 解析用户输入
+
+```cpp
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+#include <string>
+
+int main() {
+    using boost::lexical_cast;
+    using boost::bad_lexical_cast;
+
+    std::cout << "请输入一个整数: ";
+    std::string input;
+    std::getline(std::cin, input);
+
+    try {
+        int number = lexical_cast<int>(input);
+        std::cout << "您输入了: " << number << std::endl;
+        std::cout << "平方: " << number * number << std::endl;
+    } catch (const bad_lexical_cast&) {
+        std::cout << "无效的整数" << std::endl;
+    }
+
+    return 0;
+}
+```
+
+---
+
+## 与容器配合
+
+```cpp
+#include <boost/lexical_cast.hpp>
+#include <iostream>
 #include <vector>
 #include <string>
 
-struct Record {
-    int id;
-    std::string name;
-    double score;
-};
-
-std::vector<std::string> split(const std::string& str, char delim) {
-    std::vector<std::string> result;
-    std::stringstream ss(str);
-    std::string item;
-
-    while (std::getline(ss, item, delim)) {
-        result.push_back(item);
-    }
-
-    return result;
-}
-
-Record parse_csv_line(const std::string& line) {
-    auto fields = split(line, ',');
-
-    Record record;
-
-    try {
-        record.id = boost::lexical_cast<int>(fields[0]);
-        record.name = fields[1];
-        record.score = boost::lexical_cast<double>(fields[2]);
-    } catch (const boost::bad_lexical_cast& e) {
-        std::cerr << "解析错误: " << e.what() << std::endl;
-        throw;
-    }
-
-    return record;
-}
-
 int main() {
-    std::vector<std::string> csv_lines = {
-        "1,Alice,95.5",
-        "2,Bob,87.3",
-        "3,Charlie,92.1"
-    };
+    using boost::lexical_cast;
 
-    std::vector<Record> records;
+    std::vector<std::string> string_numbers = {"1", "2", "3", "4", "5"};
+    std::vector<int> numbers;
 
-    for (const auto& line : csv_lines) {
-        try {
-            records.push_back(parse_csv_line(line));
-        } catch (...) {
-            std::cerr << "跳过无效行: " << line << std::endl;
-        }
+    // 批量转换
+    for (const auto& s : string_numbers) {
+        numbers.push_back(lexical_cast<int>(s));
     }
 
-    std::cout << "解析的记录:\n";
-    for (const auto& r : records) {
-        std::cout << "ID: " << r.id
-                  << ", 姓名: " << r.name
-                  << ", 分数: " << r.score << std::endl;
+    std::cout << "转换后的数字: ";
+    for (int n : numbers) {
+        std::cout << n << " ";
     }
-
-    return 0;
-}
-```
-
-### 配置文件读取
-
-```cpp
-#include <boost/lexical_cast.hpp>
-#include <iostream>
-#include <fstream>
-#include <map>
-#include <string>
-
-class ConfigReader {
-public:
-    bool load(const std::string& filename) {
-        std::ifstream file(filename);
-        if (!file) return false;
-
-        std::string line;
-        while (std::getline(file, line)) {
-            // 跳过注释和空行
-            if (line.empty() || line[0] == '#') continue;
-
-            size_t pos = line.find('=');
-            if (pos != std::string::npos) {
-                std::string key = line.substr(0, pos);
-                std::string value = line.substr(pos + 1);
-
-                // 去除空格
-                key.erase(0, key.find_first_not_of(" \t"));
-                key.erase(key.find_last_not_of(" \t") + 1);
-                value.erase(0, value.find_first_not_of(" \t"));
-                value.erase(value.find_last_not_of(" \t") + 1);
-
-                config_[key] = value;
-            }
-        }
-
-        return true;
-    }
-
-    template<typename T>
-    T get(const std::string& key, const T& default_value) const {
-        auto it = config_.find(key);
-        if (it != config_.end()) {
-            try {
-                return boost::lexical_cast<T>(it->second);
-            } catch (const boost::bad_lexical_cast&) {
-                return default_value;
-            }
-        }
-        return default_value;
-    }
-
-private:
-    std::map<std::string, std::string> config_;
-};
-
-int main() {
-    // config.txt 内容:
-    // server.host = localhost
-    // server.port = 8080
-    // database.pool_size = 10
-    // logging.enabled = 1
-
-    ConfigReader config;
-
-    if (config.load("config.txt")) {
-        std::string host = config.get<std::string>("server.host", "0.0.0.0");
-        int port = config.get<int>("server.port", 80);
-        int pool_size = config.get<int>("database.pool_size", 5);
-        bool logging = config.get<bool>("logging.enabled", false);
-
-        std::cout << "服务器: " << host << ":" << port << std::endl;
-        std::cout << "连接池大小: " << pool_size << std::endl;
-        std::cout << "日志: " << (logging ? "启用" : "禁用") << std::endl;
-    } else {
-        std::cerr << "无法加载配置文件" << std::endl;
-    }
-
-    return 0;
-}
-```
-
-### 数据验证
-
-```cpp
-#include <boost/lexical_cast.hpp>
-#include <iostream>
-#include <string>
-#include <regex>
-
-class Validator {
-public:
-    static bool is_valid_int(const std::string& str) {
-        try {
-            boost::lexical_cast<int>(str);
-            return true;
-        } catch (const boost::bad_lexical_cast&) {
-            return false;
-        }
-    }
-
-    static bool is_valid_double(const std::string& str) {
-        try {
-            boost::lexical_cast<double>(str);
-            return true;
-        } catch (const boost::bad_lexical_cast&) {
-            return false;
-        }
-    }
-
-    static bool is_in_range(const std::string& str, int min, int max) {
-        try {
-            int value = boost::lexical_cast<int>(str);
-            return value >= min && value <= max;
-        } catch (const boost::bad_lexical_cast&) {
-            return false;
-        }
-    }
-};
-
-int main() {
-    std::vector<std::string> test_values = {
-        "123", "abc", "3.14", "-456", "999999999999999999"
-    };
-
-    for (const auto& val : test_values) {
-        std::cout << "\"" << val << "\": ";
-
-        if (Validator::is_valid_int(val)) {
-            std::cout << "有效整数";
-            if (Validator::is_in_range(val, 0, 1000)) {
-                std::cout << " (在范围内)";
-            }
-        } else if (Validator::is_valid_double(val)) {
-            std::cout << "有效浮点数";
-        } else {
-            std::cout << "无效数字";
-        }
-
-        std::cout << std::endl;
-    }
+    std::cout << std::endl;
 
     return 0;
 }
@@ -448,7 +191,50 @@ int main() {
 
 ---
 
-## 性能考虑
+## 自定义类型支持
+
+```cpp
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+#include <string>
+#include <sstream>
+
+struct Point {
+    int x, y;
+};
+
+// 输出流操作符（lexical_cast 需要）
+std::ostream& operator<<(std::ostream& os, const Point& p) {
+    os << p.x << "," << p.y;
+    return os;
+}
+
+// 输入流操作符（lexical_cast 需要）
+std::istream& operator>>(std::istream& is, Point& p) {
+    char comma;
+    is >> p.x >> comma >> p.y;
+    return is;
+}
+
+int main() {
+    using boost::lexical_cast;
+
+    // Point 转字符串
+    Point p1{10, 20};
+    std::string s = lexical_cast<std::string>(p1);
+    std::cout << "Point 转字符串: " << s << std::endl;
+
+    // 字符串转 Point
+    Point p2 = lexical_cast<Point>("30,40");
+    std::cout << "字符串转 Point: (" << p2.x << ", " << p2.y << ")" << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 性能对比
 
 ```cpp
 #include <boost/lexical_cast.hpp>
@@ -457,51 +243,30 @@ int main() {
 #include <sstream>
 #include <chrono>
 
-void benchmark_lexical_cast() {
-    auto start = std::chrono::high_resolution_clock::now();
+int main() {
+    const int iterations = 100000;
 
-    for (int i = 0; i < 100000; ++i) {
+    // 使用 lexical_cast
+    auto start1 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < iterations; ++i) {
         std::string s = boost::lexical_cast<std::string>(i);
     }
+    auto end1 = std::chrono::high_resolution_clock::now();
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-    std::cout << "lexical_cast: " << duration.count() << " ms" << std::endl;
-}
-
-void benchmark_stringstream() {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    for (int i = 0; i < 100000; ++i) {
+    // 使用 stringstream
+    auto start2 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < iterations; ++i) {
         std::stringstream ss;
         ss << i;
         std::string s = ss.str();
     }
+    auto end2 = std::chrono::high_resolution_clock::now();
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1);
+    auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2);
 
-    std::cout << "stringstream: " << duration.count() << " ms" << std::endl;
-}
-
-void benchmark_to_string() {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    for (int i = 0; i < 100000; ++i) {
-        std::string s = std::to_string(i);
-    }
-
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-    std::cout << "std::to_string: " << duration.count() << " ms" << std::endl;
-}
-
-int main() {
-    benchmark_lexical_cast();
-    benchmark_stringstream();
-    benchmark_to_string();
+    std::cout << "lexical_cast: " << duration1.count() << " ms" << std::endl;
+    std::cout << "stringstream: " << duration2.count() << " ms" << std::endl;
 
     return 0;
 }
@@ -509,28 +274,134 @@ int main() {
 
 ---
 
-## 最佳实践
+## 格式化控制
 
-1. **错误处理**: 始终使用 try-catch 或 try_lexical_convert
-2. **性能**: 频繁转换时考虑使用 std::to_string
-3. **类型安全**: 优于 atoi 等 C 风格函数
-4. **可读性**: 代码更简洁明了
-5. **C++11+**: 结合 std::to_string 使用
+```cpp
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+#include <string>
+#include <iomanip>
+
+int main() {
+    using boost::lexical_cast;
+
+    double d = 3.14159265358979;
+
+    // lexical_cast 使用默认精度
+    std::string s1 = lexical_cast<std::string>(d);
+    std::cout << "默认: " << s1 << std::endl;
+
+    // 需要更多控制时使用 stringstream
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2) << d;
+    std::string s2 = ss.str();
+    std::cout << "控制精度: " << s2 << std::endl;
+
+    return 0;
+}
+```
 
 ---
 
-## 与其他方法的对比
+## 布尔值转换
 
-| 方法 | 优点 | 缺点 |
-|------|------|------|
-| `lexical_cast` | 简洁、类型安全 | 相对较慢 |
-| `std::stringstream` | 灵活、格式化 | 冗长、慢 |
-| `std::to_string` (C++11) | 快速 | 仅支持数字转字符串 |
-| `std::stoi` (C++11) | 快速 | 仅支持字符串转整数 |
-| `atoi` | 快速 | 不安全、无错误处理 |
+```cpp
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+#include <string>
+
+int main() {
+    using boost::lexical_cast;
+    using boost::bad_lexical_cast;
+
+    // 布尔值转字符串
+    std::string s1 = lexical_cast<std::string>(true);
+    std::string s2 = lexical_cast<std::string>(false);
+    std::cout << "true -> \"" << s1 << "\"" << std::endl;
+    std::cout << "false -> \"" << s2 << "\"" << std::endl;
+
+    // 字符串转布尔值
+    try {
+        bool b1 = lexical_cast<bool>("1");
+        bool b2 = lexical_cast<bool>("0");
+        bool b3 = lexical_cast<bool>("true");
+        bool b4 = lexical_cast<bool>("false");
+
+        std::cout << std::boolalpha;
+        std::cout << "\"1\" -> " << b1 << std::endl;
+        std::cout << "\"0\" -> " << b2 << std::endl;
+        std::cout << "\"true\" -> " << b3 << std::endl;
+        std::cout << "\"false\" -> " << b4 << std::endl;
+    } catch (const bad_lexical_cast& e) {
+        std::cout << "转换失败: " << e.what() << std::endl;
+    }
+
+    return 0;
+}
+```
+
+---
+
+## CSV 解析示例
+
+```cpp
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+
+struct Record {
+    std::string name;
+    int age;
+    double salary;
+};
+
+Record parse_csv_line(const std::string& line) {
+    using boost::lexical_cast;
+
+    std::vector<std::string> fields;
+    std::stringstream ss(line);
+    std::string field;
+
+    while (std::getline(ss, field, ',')) {
+        fields.push_back(field);
+    }
+
+    Record record;
+    record.name = fields[0];
+    record.age = lexical_cast<int>(fields[1]);
+    record.salary = lexical_cast<double>(fields[2]);
+
+    return record;
+}
+
+int main() {
+    std::vector<std::string> csv_lines = {
+        "Alice,30,50000.00",
+        "Bob,25,45000.50",
+        "Charlie,35,60000.75"
+    };
+
+    std::cout << "CSV 解析结果:\n";
+    for (const auto& line : csv_lines) {
+        try {
+            Record rec = parse_csv_line(line);
+            std::cout << "  " << rec.name << ", "
+                      << rec.age << "岁, "
+                      << rec.salary << "元" << std::endl;
+        } catch (const boost::bad_lexical_cast& e) {
+            std::cout << "  解析失败: " << line << std::endl;
+        }
+    }
+
+    return 0;
+}
+```
 
 ---
 
 ## 参考资源
 
-- [Boost.Lexical_Cast 官方文档](https://www.boost.org/doc/libs/1_90_0/doc/html/boost_lexical_cast.html)
+- [Boost.LexicalCast 官方文档](https://www.boost.org/doc/libs/1_90_0/doc/html/boost_lexical_cast.html)
+- [C++ 类型转换](https://en.cppreference.com/w/cpp/string/basic_string/to_string)
