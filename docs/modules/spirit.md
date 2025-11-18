@@ -1,16 +1,14 @@
-# Boost.Spirit - 解析器框架
+# Boost.Spirit - 解析器生成器
 
 ## 概述
 
-Boost.Spirit 是一个强大的解析器和生成器框架，使用 C++ 模板元编程技术，允许直接在 C++ 代码中编写 EBNF 风格的语法规则。
+Boost.Spirit 是一个基于 C++ 模板的解析器生成器框架，可以直接在 C++ 代码中定义语法规则。
 
 **类型**: 仅头文件库
 
-**注意**: Spirit 是一个高级库，学习曲线较陡峭，但功能强大
-
 ---
 
-## 快速开始 - 简单数字解析
+## 快速开始
 
 ```cpp
 #include <boost/spirit/include/qi.hpp>
@@ -21,67 +19,19 @@ namespace qi = boost::spirit::qi;
 
 int main() {
     std::string input = "42";
-
     int value;
-    auto iter = input.begin();
-    auto end = input.end();
 
     // 解析整数
-    bool success = qi::parse(iter, end, qi::int_, value);
-
-    if (success && iter == end) {
-        std::cout << "Parsed value: " << value << std::endl;
-    } else {
-        std::cout << "Parsing failed" << std::endl;
-    }
-
-    return 0;
-}
-```
-
----
-
-## 解析多个值
-
-```cpp
-#include <boost/spirit/include/qi.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
-#include <iostream>
-#include <string>
-
-namespace qi = boost::spirit::qi;
-
-struct Point {
-    int x;
-    int y;
-};
-
-// 适配结构体以便 Spirit 使用
-BOOST_FUSION_ADAPT_STRUCT(
-    Point,
-    (int, x)
-    (int, y)
-)
-
-int main() {
-    std::string input = "10, 20";
-
-    Point point;
-    auto iter = input.begin();
-    auto end = input.end();
-
-    // 语法规则: 整数, 逗号, 空格, 整数
-    bool success = qi::phrase_parse(
-        iter, end,
-        qi::int_ >> ',' >> qi::int_,
-        qi::space,  // 跳过空格
-        point
+    bool success = qi::parse(
+        input.begin(), input.end(),
+        qi::int_,
+        value
     );
 
-    if (success && iter == end) {
-        std::cout << "Point: (" << point.x << ", " << point.y << ")" << std::endl;
+    if (success) {
+        std::cout << "解析成功: " << value << std::endl;
     } else {
-        std::cout << "Parsing failed" << std::endl;
+        std::cout << "解析失败" << std::endl;
     }
 
     return 0;
@@ -90,52 +40,99 @@ int main() {
 
 ---
 
-## 自定义语法规则
+## 解析数字
 
 ```cpp
 #include <boost/spirit/include/qi.hpp>
 #include <iostream>
 #include <string>
-#include <vector>
 
 namespace qi = boost::spirit::qi;
-namespace ascii = boost::spirit::ascii;
 
-// 定义语法规则
-template <typename Iterator>
-struct NumberListGrammar : qi::grammar<Iterator, std::vector<int>(), ascii::space_type> {
-    NumberListGrammar() : NumberListGrammar::base_type(start) {
-        // 规则: 一个或多个整数，用逗号分隔
-        start = qi::int_ % ',';
+int main() {
+    std::string input = "123 45.67 0x1A";
+    auto it = input.begin();
+
+    int i;
+    double d;
+    int hex;
+
+    // 解析整数
+    qi::parse(it, input.end(), qi::int_, i);
+    std::cout << "整数: " << i << std::endl;
+
+    // 跳过空格
+    qi::phrase_parse(it, input.end(), qi::double_, qi::space, d);
+    std::cout << "浮点数: " << d << std::endl;
+
+    // 解析十六进制
+    qi::phrase_parse(it, input.end(), qi::hex, qi::space, hex);
+    std::cout << "十六进制: " << hex << " (十进制: " << hex << ")" << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 解析字符串
+
+```cpp
+#include <boost/spirit/include/qi.hpp>
+#include <iostream>
+#include <string>
+
+namespace qi = boost::spirit::qi;
+
+int main() {
+    std::string input = "\"Hello, World!\"";
+    std::string result;
+
+    // 解析带引号的字符串
+    bool success = qi::parse(
+        input.begin(), input.end(),
+        '"' >> *(qi::char_ - '"') >> '"',
+        result
+    );
+
+    if (success) {
+        std::cout << "解析的字符串: " << result << std::endl;
     }
 
-    qi::rule<Iterator, std::vector<int>(), ascii::space_type> start;
-};
+    return 0;
+}
+```
+
+---
+
+## 解析列表
+
+```cpp
+#include <boost/spirit/include/qi.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+
+namespace qi = boost::spirit::qi;
 
 int main() {
     std::string input = "1, 2, 3, 4, 5";
-
     std::vector<int> numbers;
-    NumberListGrammar<std::string::iterator> grammar;
 
-    auto iter = input.begin();
-    auto end = input.end();
-
+    // 解析逗号分隔的整数列表
     bool success = qi::phrase_parse(
-        iter, end,
-        grammar,
-        ascii::space,
+        input.begin(), input.end(),
+        qi::int_ % ',',  // % 表示分隔符
+        qi::space,
         numbers
     );
 
-    if (success && iter == end) {
-        std::cout << "Parsed numbers: ";
+    if (success) {
+        std::cout << "解析的数字: ";
         for (int n : numbers) {
             std::cout << n << " ";
         }
         std::cout << std::endl;
-    } else {
-        std::cout << "Parsing failed" << std::endl;
     }
 
     return 0;
@@ -144,87 +141,109 @@ int main() {
 
 ---
 
-## JSON 解析示例
+## 自定义规则
 
 ```cpp
 #include <boost/spirit/include/qi.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
+#include <iostream>
+#include <string>
+
+namespace qi = boost::spirit::qi;
+
+template <typename Iterator>
+struct phone_parser : qi::grammar<Iterator, std::string()> {
+    phone_parser() : phone_parser::base_type(phone) {
+        // 电话号码格式: XXX-XXXX-XXXX
+        phone = qi::repeat(3)[qi::digit] >> '-'
+             >> qi::repeat(4)[qi::digit] >> '-'
+             >> qi::repeat(4)[qi::digit];
+    }
+
+    qi::rule<Iterator, std::string()> phone;
+};
+
+int main() {
+    std::string input = "010-1234-5678";
+    std::string result;
+
+    phone_parser<std::string::iterator> parser;
+
+    bool success = qi::parse(
+        input.begin(), input.end(),
+        parser,
+        result
+    );
+
+    if (success) {
+        std::cout << "有效的电话号码: " << result << std::endl;
+    } else {
+        std::cout << "无效的电话号码" << std::endl;
+    }
+
+    return 0;
+}
+```
+
+---
+
+## 解析JSON
+
+```cpp
+#include <boost/spirit/include/qi.hpp>
 #include <boost/variant.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
 #include <iostream>
 #include <string>
 #include <map>
-#include <vector>
 
 namespace qi = boost::spirit::qi;
-namespace ascii = boost::spirit::ascii;
 
-// 简化的 JSON 值类型
+// 简化的JSON值
 typedef boost::variant<
     std::string,
     double,
     bool
-> JsonValue;
-
-struct JsonObject {
-    std::map<std::string, JsonValue> members;
-};
-
-BOOST_FUSION_ADAPT_STRUCT(
-    JsonObject,
-    (std::map<std::string, JsonValue>, members)
-)
+> json_value;
 
 template <typename Iterator>
-struct SimpleJsonGrammar : qi::grammar<Iterator, JsonObject(), ascii::space_type> {
-    SimpleJsonGrammar() : SimpleJsonGrammar::base_type(object) {
-        using qi::lit;
-        using qi::lexeme;
-        using ascii::char_;
-
-        // 字符串: "..."
-        quoted_string = lexeme['"' >> +(char_ - '"') >> '"'];
-
-        // JSON 值: 字符串、数字或布尔值
-        value = quoted_string | qi::double_ | qi::bool_;
-
-        // 键值对: "key": value
-        pair = quoted_string >> ':' >> value;
-
-        // 对象: { "key1": value1, "key2": value2 }
-        object = '{' >> -(pair % ',') >> '}';
+struct simple_json_parser : qi::grammar<Iterator, json_value(), qi::space_type> {
+    simple_json_parser() : simple_json_parser::base_type(value) {
+        string_value = '"' >> *(qi::char_ - '"') >> '"';
+        number_value = qi::double_;
+        bool_value = qi::bool_;
+        
+        value = string_value | number_value | bool_value;
     }
 
-    qi::rule<Iterator, std::string(), ascii::space_type> quoted_string;
-    qi::rule<Iterator, JsonValue(), ascii::space_type> value;
-    qi::rule<Iterator, std::pair<std::string, JsonValue>(), ascii::space_type> pair;
-    qi::rule<Iterator, JsonObject(), ascii::space_type> object;
+    qi::rule<Iterator, std::string(), qi::space_type> string_value;
+    qi::rule<Iterator, double(), qi::space_type> number_value;
+    qi::rule<Iterator, bool(), qi::space_type> bool_value;
+    qi::rule<Iterator, json_value(), qi::space_type> value;
 };
 
 int main() {
-    std::string input = R"({
-        "name": "John",
-        "age": 30,
-        "active": true
-    })";
+    std::vector<std::string> inputs = {
+        "\"hello\"",
+        "42.5",
+        "true"
+    };
 
-    JsonObject obj;
-    SimpleJsonGrammar<std::string::iterator> grammar;
+    simple_json_parser<std::string::iterator> parser;
 
-    auto iter = input.begin();
-    auto end = input.end();
+    for (const auto& input : inputs) {
+        json_value result;
+        auto it = input.begin();
 
-    bool success = qi::phrase_parse(
-        iter, end,
-        grammar,
-        ascii::space,
-        obj
-    );
+        bool success = qi::phrase_parse(
+            it, input.end(),
+            parser,
+            qi::space,
+            result
+        );
 
-    if (success && iter == end) {
-        std::cout << "Parsed JSON object with "
-                  << obj.members.size() << " members" << std::endl;
-    } else {
-        std::cout << "Parsing failed" << std::endl;
+        if (success) {
+            std::cout << "解析成功: " << input << std::endl;
+        }
     }
 
     return 0;
@@ -233,64 +252,41 @@ int main() {
 
 ---
 
-## 计算器示例
+## 解析表达式
 
 ```cpp
 #include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
 #include <iostream>
 #include <string>
 
 namespace qi = boost::spirit::qi;
-namespace ascii = boost::spirit::ascii;
 
 template <typename Iterator>
-struct CalculatorGrammar : qi::grammar<Iterator, int(), ascii::space_type> {
-    CalculatorGrammar() : CalculatorGrammar::base_type(expression) {
-        using qi::_val;
-        using qi::_1;
-        using qi::int_;
-
-        // 表达式 = 项 + 项 - 项
-        expression = term[_val = _1]
-                   >> *(('+' >> term[_val += _1])
-                   |    ('-' >> term[_val -= _1]));
-
-        // 项 = 因子 * 因子 / 因子
-        term = factor[_val = _1]
-             >> *(('*' >> factor[_val *= _1])
-             |    ('/' >> factor[_val /= _1]));
-
-        // 因子 = 数字 或 (表达式)
-        factor = int_[_val = _1]
-               | ('(' >> expression[_val = _1] >> ')');
+struct calculator : qi::grammar<Iterator, int(), qi::space_type> {
+    calculator() : calculator::base_type(expression) {
+        expression = term >> *(('+' >> term) | ('-' >> term));
+        term = factor >> *(('*' >> factor) | ('/' >> factor));
+        factor = qi::int_ | ('(' >> expression >> ')');
     }
 
-    qi::rule<Iterator, int(), ascii::space_type> expression;
-    qi::rule<Iterator, int(), ascii::space_type> term;
-    qi::rule<Iterator, int(), ascii::space_type> factor;
+    qi::rule<Iterator, int(), qi::space_type> expression, term, factor;
 };
 
 int main() {
-    std::string input = "2 * (3 + 4) - 5";
+    std::string input = "2 + 3 * 4";
 
+    calculator<std::string::iterator> calc;
     int result;
-    CalculatorGrammar<std::string::iterator> calc;
-
-    auto iter = input.begin();
-    auto end = input.end();
 
     bool success = qi::phrase_parse(
-        iter, end,
+        input.begin(), input.end(),
         calc,
-        ascii::space,
+        qi::space,
         result
     );
 
-    if (success && iter == end) {
+    if (success) {
         std::cout << input << " = " << result << std::endl;
-    } else {
-        std::cout << "Parsing failed" << std::endl;
     }
 
     return 0;
@@ -299,55 +295,7 @@ int main() {
 
 ---
 
-## CSV 解析
-
-```cpp
-#include <boost/spirit/include/qi.hpp>
-#include <iostream>
-#include <string>
-#include <vector>
-
-namespace qi = boost::spirit::qi;
-
-template <typename Iterator>
-bool parse_csv_line(Iterator first, Iterator last, std::vector<std::string>& v) {
-    using qi::lexeme;
-    using qi::char_;
-    using qi::_1;
-
-    // CSV 字段规则
-    auto field = lexeme[+(char_ - ',')];
-
-    // 整行规则: 字段 % 逗号
-    bool r = qi::parse(first, last, field % ',', v);
-
-    if (first != last) {
-        return false;
-    }
-
-    return r;
-}
-
-int main() {
-    std::string line = "Alice,30,New York";
-    std::vector<std::string> fields;
-
-    if (parse_csv_line(line.begin(), line.end(), fields)) {
-        std::cout << "Parsed " << fields.size() << " fields:\n";
-        for (const auto& field : fields) {
-            std::cout << "  [" << field << "]" << std::endl;
-        }
-    } else {
-        std::cout << "Parsing failed" << std::endl;
-    }
-
-    return 0;
-}
-```
-
----
-
-## Karma - 生成器（与 Qi 相反）
+## Karma 生成器
 
 ```cpp
 #include <boost/spirit/include/karma.hpp>
@@ -359,32 +307,139 @@ namespace karma = boost::spirit::karma;
 
 int main() {
     std::vector<int> numbers = {1, 2, 3, 4, 5};
-
     std::string output;
-    auto iter = std::back_inserter(output);
 
-    // 生成逗号分隔的数字列表
-    bool success = karma::generate(
-        iter,
-        karma::int_ % ", ",  // 格式: 整数，用 ", " 分隔
+    // 生成逗号分隔的列表
+    karma::generate(
+        std::back_inserter(output),
+        karma::int_ % ", ",
         numbers
+    );
+
+    std::cout << "生成的字符串: " << output << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 解析配置文件
+
+```cpp
+#include <boost/spirit/include/qi.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
+#include <iostream>
+#include <string>
+#include <map>
+
+namespace qi = boost::spirit::qi;
+
+struct config_entry {
+    std::string key;
+    std::string value;
+};
+
+BOOST_FUSION_ADAPT_STRUCT(
+    config_entry,
+    (std::string, key)
+    (std::string, value)
+)
+
+template <typename Iterator>
+struct config_parser : qi::grammar<Iterator, std::vector<config_entry>(), qi::space_type> {
+    config_parser() : config_parser::base_type(config) {
+        key = qi::char_("a-zA-Z_") >> *qi::char_("a-zA-Z0-9_");
+        value = *(qi::char_ - qi::eol);
+        entry = key >> '=' >> value;
+        config = *entry;
+    }
+
+    qi::rule<Iterator, std::string()> key, value;
+    qi::rule<Iterator, config_entry(), qi::space_type> entry;
+    qi::rule<Iterator, std::vector<config_entry>(), qi::space_type> config;
+};
+
+int main() {
+    std::string input = 
+        "name = MyApp\n"
+        "version = 1.0\n"
+        "port = 8080\n";
+
+    config_parser<std::string::iterator> parser;
+    std::vector<config_entry> entries;
+
+    bool success = qi::phrase_parse(
+        input.begin(), input.end(),
+        parser,
+        qi::space,
+        entries
     );
 
     if (success) {
-        std::cout << "Generated: " << output << std::endl;
+        std::cout << "配置项:\\n";
+        for (const auto& entry : entries) {
+            std::cout << "  " << entry.key << " = " << entry.value << std::endl;
+        }
     }
 
-    // 生成更复杂的格式
-    output.clear();
-    iter = std::back_inserter(output);
+    return 0;
+}
+```
 
-    karma::generate(
-        iter,
-        '[' << (karma::int_ % ", ") << ']',
-        numbers
+---
+
+## 解析CSV
+
+```cpp
+#include <boost/spirit/include/qi.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+
+namespace qi = boost::spirit::qi;
+
+template <typename Iterator>
+struct csv_parser : qi::grammar<Iterator, std::vector<std::vector<std::string>>()> {
+    csv_parser() : csv_parser::base_type(csv) {
+        field = '"' >> *(qi::char_ - '"') >> '"'
+              | *(qi::char_ - ',' - qi::eol);
+        
+        record = field % ',';
+        csv = record % qi::eol;
+    }
+
+    qi::rule<Iterator, std::string()> field;
+    qi::rule<Iterator, std::vector<std::string>()> record;
+    qi::rule<Iterator, std::vector<std::vector<std::string>>()> csv;
+};
+
+int main() {
+    std::string input = 
+        "Name,Age,City\n"
+        "Alice,30,Beijing\n"
+        "Bob,25,Shanghai\n"
+        "\"Charlie Chan\",35,\"Hong Kong\"";
+
+    csv_parser<std::string::iterator> parser;
+    std::vector<std::vector<std::string>> data;
+
+    bool success = qi::parse(
+        input.begin(), input.end(),
+        parser,
+        data
     );
 
-    std::cout << "Generated with brackets: " << output << std::endl;
+    if (success) {
+        std::cout << "CSV 数据:\\n";
+        for (const auto& row : data) {
+            for (size_t i = 0; i < row.size(); ++i) {
+                std::cout << row[i];
+                if (i < row.size() - 1) std::cout << " | ";
+            }
+            std::cout << std::endl;
+        }
+    }
 
     return 0;
 }
@@ -395,5 +450,5 @@ int main() {
 ## 参考资源
 
 - [Boost.Spirit 官方文档](https://www.boost.org/doc/libs/1_90_0/libs/spirit/doc/html/index.html)
-- [Spirit Qi 教程](https://www.boost.org/doc/libs/1_90_0/libs/spirit/doc/html/spirit/qi/tutorials.html)
-- [Spirit Karma 文档](https://www.boost.org/doc/libs/1_90_0/libs/spirit/doc/html/spirit/karma.html)
+- [Spirit Qi 教程](https://www.boost.org/doc/libs/1_90_0/libs/spirit/doc/html/spirit/qi.html)
+- [Spirit Karma 教程](https://www.boost.org/doc/libs/1_90_0/libs/spirit/doc/html/spirit/karma.html)
