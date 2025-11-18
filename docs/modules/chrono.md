@@ -1,14 +1,12 @@
-# Boost.Chrono - 时间点和时长库
+# Boost.Chrono - 时间库
 
 ## 概述
 
-Boost.Chrono 提供时间点、时长和时钟功能。
+Boost.Chrono 提供时间点、持续时间和时钟的操作，是 C++11 std::chrono 的前身。
 
-**类型**: 需要编译链接的库
+**类型**: 需要编译的库
 
-**链接库**: `-lboost_chrono -lboost_system`
-
-**注意**: C++11 已引入 `<chrono>`
+**注意**: C++11 引入了 std::chrono，优先使用标准库版本
 
 ---
 
@@ -19,30 +17,54 @@ Boost.Chrono 提供时间点、时长和时钟功能。
 #include <iostream>
 
 int main() {
-    // 时间点
-    auto start = boost::chrono::high_resolution_clock::now();
+    using namespace boost::chrono;
 
-    // 执行一些操作
-    for (int i = 0; i < 1000000; ++i) {
-        volatile int x = i * i;
-    }
+    // 创建时间点
+    auto start = high_resolution_clock::now();
 
-    auto end = boost::chrono::high_resolution_clock::now();
+    // 模拟工作
+    for (int i = 0; i < 1000000; ++i);
 
-    // 计算时长
+    auto end = high_resolution_clock::now();
+
+    // 计算持续时间
     auto duration = end - start;
 
-    std::cout << "耗时: "
-              << boost::chrono::duration_cast<boost::chrono::milliseconds>(duration).count()
-              << " ms" << std::endl;
+    std::cout << "耗时: " << duration << std::endl;
+    std::cout << "毫秒: " << duration_cast<milliseconds>(duration) << std::endl;
 
     return 0;
 }
 ```
 
-**编译**:
-```bash
-g++ -std=c++11 example.cpp -lboost_chrono -lboost_system -o example
+**编译**: `g++ -std=c++14 example.cpp -lboost_chrono -lboost_system`
+
+---
+
+## 持续时间
+
+```cpp
+#include <boost/chrono.hpp>
+#include <iostream>
+
+int main() {
+    using namespace boost::chrono;
+
+    // 创建不同单位的持续时间
+    seconds sec(5);
+    milliseconds ms(5000);
+    microseconds us(5000000);
+
+    std::cout << sec << std::endl;
+    std::cout << ms << std::endl;
+    std::cout << us << std::endl;
+
+    // 转换
+    auto ms_from_sec = duration_cast<milliseconds>(sec);
+    std::cout << "5秒 = " << ms_from_sec.count() << " 毫秒" << std::endl;
+
+    return 0;
+}
 ```
 
 ---
@@ -54,16 +76,21 @@ g++ -std=c++11 example.cpp -lboost_chrono -lboost_system -o example
 #include <iostream>
 
 int main() {
+    using namespace boost::chrono;
+
     // 系统时钟
-    auto sys_now = boost::chrono::system_clock::now();
+    auto sys_now = system_clock::now();
+    std::cout << "系统时间: " << sys_now << std::endl;
+
+    // 稳定时钟（单调）
+    auto steady_start = steady_clock::now();
+    for (int i = 0; i < 1000000; ++i);
+    auto steady_end = steady_clock::now();
+    std::cout << "稳定时钟差: " << steady_end - steady_start << std::endl;
 
     // 高精度时钟
-    auto hr_now = boost::chrono::high_resolution_clock::now();
-
-    // 稳定时钟（单调递增）
-    auto steady_now = boost::chrono::steady_clock::now();
-
-    std::cout << "System clock: " << sys_now.time_since_epoch().count() << std::endl;
+    auto hr_now = high_resolution_clock::now();
+    std::cout << "高精度时间: " << hr_now << std::endl;
 
     return 0;
 }
@@ -71,7 +98,7 @@ int main() {
 
 ---
 
-## 时长操作
+## 时间算术
 
 ```cpp
 #include <boost/chrono.hpp>
@@ -80,23 +107,56 @@ int main() {
 int main() {
     using namespace boost::chrono;
 
-    // 创建时长
-    seconds sec(10);
-    milliseconds ms(5000);
-    microseconds us(1000000);
+    hours h(2);
+    minutes m(30);
+    seconds s(45);
 
-    // 转换
-    auto sec_from_ms = duration_cast<seconds>(ms);
-    std::cout << "5000 ms = " << sec_from_ms.count() << " s" << std::endl;
+    // 加法
+    auto total = h + m + s;
+    std::cout << "总计: " << total << std::endl;
+    std::cout << "秒数: " << duration_cast<seconds>(total) << std::endl;
 
-    // 算术运算
-    seconds total = sec + sec_from_ms;
-    std::cout << "Total: " << total.count() << " s" << std::endl;
+    // 减法
+    auto diff = h - m;
+    std::cout << "差值: " << duration_cast<minutes>(diff) << std::endl;
 
-    // 比较
-    if (sec < ms) {
-        std::cout << "10s < 5000ms" << std::endl;
-    }
+    // 乘法
+    auto doubled = s * 2;
+    std::cout << "翻倍: " << doubled << std::endl;
+
+    // 除法
+    auto half = s / 2;
+    std::cout << "减半: " << half << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 时间点操作
+
+```cpp
+#include <boost/chrono.hpp>
+#include <iostream>
+
+int main() {
+    using namespace boost::chrono;
+
+    auto now = system_clock::now();
+    std::cout << "当前: " << now << std::endl;
+
+    // 添加时间
+    auto future = now + hours(24);
+    std::cout << "24小时后: " << future << std::endl;
+
+    // 减去时间
+    auto past = now - hours(12);
+    std::cout << "12小时前: " << past << std::endl;
+
+    // 时间点差值
+    auto diff = future - past;
+    std::cout << "差值: " << duration_cast<hours>(diff) << std::endl;
 
     return 0;
 }
@@ -108,56 +168,58 @@ int main() {
 
 ```cpp
 #include <boost/chrono.hpp>
-#include <boost/chrono/process_cpu_clocks.hpp>
 #include <iostream>
+#include <vector>
 
-void expensive_operation() {
-    for (long i = 0; i < 10000000; ++i) {
-        volatile double x = i * 1.5;
+using namespace boost::chrono;
+
+void benchmark_operation() {
+    auto start = high_resolution_clock::now();
+
+    // 执行操作
+    std::vector<int> v(1000000);
+    for (size_t i = 0; i < v.size(); ++i) {
+        v[i] = i * i;
     }
+
+    auto end = high_resolution_clock::now();
+    auto duration = end - start;
+
+    std::cout << "操作耗时: ";
+    std::cout << duration_cast<milliseconds>(duration) << std::endl;
 }
 
 int main() {
-    boost::chrono::process_cpu_clock::time_point start =
-        boost::chrono::process_cpu_clock::now();
-
-    expensive_operation();
-
-    boost::chrono::process_cpu_clock::time_point end =
-        boost::chrono::process_cpu_clock::now();
-
-    boost::chrono::process_cpu_clock::duration elapsed = end - start;
-
-    std::cout << "CPU time: "
-              << boost::chrono::duration_cast<boost::chrono::milliseconds>(elapsed).count()
-              << " ms" << std::endl;
-
+    benchmark_operation();
     return 0;
 }
 ```
 
 ---
 
-## I/O 格式化
+## CPU 时间
 
 ```cpp
 #include <boost/chrono.hpp>
-#include <boost/chrono/chrono_io.hpp>
 #include <iostream>
 
 int main() {
     using namespace boost::chrono;
 
-    seconds sec(65);
-    std::cout << sec << std::endl;
+    auto start = process_real_cpu_clock::now();
 
-    milliseconds ms(1234);
-    std::cout << ms << std::endl;
+    // 执行 CPU 密集型任务
+    double result = 0;
+    for (int i = 0; i < 10000000; ++i) {
+        result += i * 0.0001;
+    }
 
-    hours h(2);
-    minutes m(30);
-    auto total = h + m;
-    std::cout << duration_cast<minutes>(total) << std::endl;
+    auto end = process_real_cpu_clock::now();
+    auto cpu_time = end - start;
+
+    std::cout << "CPU 时间: ";
+    std::cout << duration_cast<milliseconds>(cpu_time) << std::endl;
+    std::cout << "结果: " << result << std::endl;
 
     return 0;
 }
@@ -165,25 +227,88 @@ int main() {
 
 ---
 
-## 与 std::chrono 对比
+## 时间格式化
 
 ```cpp
 #include <boost/chrono.hpp>
-#include <chrono>
+#include <boost/chrono/chrono_io.hpp>
 #include <iostream>
+#include <locale>
 
 int main() {
-    // Boost.Chrono
-    auto b_start = boost::chrono::high_resolution_clock::now();
-    auto b_duration = boost::chrono::milliseconds(1000);
+    using namespace boost::chrono;
 
-    // std::chrono (C++11)
-    auto s_start = std::chrono::high_resolution_clock::now();
-    auto s_duration = std::chrono::milliseconds(1000);
+    milliseconds ms(12345);
 
-    // API 基本相同
-    std::cout << "Boost: " << b_duration.count() << std::endl;
-    std::cout << "Std: " << s_duration.count() << std::endl;
+    // 默认格式
+    std::cout << ms << std::endl;
+
+    // 使用 IO 格式化
+    std::cout << duration_fmt(duration_style::prefix) << ms << std::endl;
+    std::cout << duration_fmt(duration_style::symbol) << ms << std::endl;
+
+    return 0;
+}
+```
+
+---
+
+## 等待超时
+
+```cpp
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
+#include <iostream>
+
+using namespace boost::chrono;
+
+int main() {
+    auto start = steady_clock::now();
+
+    // 等待2秒
+    boost::this_thread::sleep_for(seconds(2));
+
+    auto end = steady_clock::now();
+    auto elapsed = end - start;
+
+    std::cout << "实际等待: ";
+    std::cout << duration_cast<milliseconds>(elapsed) << std::endl;
+
+    return 0;
+}
+```
+
+**编译**: `g++ -std=c++14 example.cpp -lboost_chrono -lboost_thread -lboost_system -lpthread`
+
+---
+
+## 周期性任务
+
+```cpp
+#include <boost/chrono.hpp>
+#include <iostream>
+
+using namespace boost::chrono;
+
+int main() {
+    auto next_run = steady_clock::now();
+    milliseconds interval(500);  // 500ms 间隔
+
+    for (int i = 0; i < 5; ++i) {
+        // 计算下次运行时间
+        next_run += interval;
+
+        // 执行任务
+        std::cout << "任务 " << i + 1 << " 执行" << std::endl;
+
+        // 等待到下次运行时间
+        auto now = steady_clock::now();
+        if (next_run > now) {
+            auto sleep_time = next_run - now;
+            std::cout << "  等待 " << duration_cast<milliseconds>(sleep_time) 
+                      << std::endl;
+        }
+    }
 
     return 0;
 }
@@ -194,3 +319,4 @@ int main() {
 ## 参考资源
 
 - [Boost.Chrono 官方文档](https://www.boost.org/doc/libs/1_90_0/doc/html/chrono.html)
+- [C++11 std::chrono](https://en.cppreference.com/w/cpp/chrono)
