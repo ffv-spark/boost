@@ -2,361 +2,307 @@
 
 ## 概述
 
-Boost.MPL (Meta-Programming Library) 提供编译期元编程支持，可以操作类型序列和进行编译期计算。
+Boost.MPL (Metaprogramming Library) 提供编译期元编程工具，支持类型列表、算法和元函数。
 
 **类型**: 仅头文件库
 
-**难度**: 高级
-
 ---
 
-## 快速开始 - 类型序列
+## 快速开始
 
 ```cpp
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/at.hpp>
+#include <iostream>
+#include <typeinfo>
+
+int main() {
+    using namespace boost::mpl;
+    
+    // 创建类型序列
+    typedef vector<int, double, char> types;
+    
+    // 获取元素
+    typedef at_c<types, 0>::type first;   // int
+    typedef at_c<types, 1>::type second;  // double
+    
+    std::cout << "第一个类型: " << typeid(first).name() << std::endl;
+    std::cout << "第二个类型: " << typeid(second).name() << std::endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 类型序列
+
+```cpp
+#include <boost/mpl/vector.hpp>
+#include <boost/mpl/list.hpp>
 #include <boost/mpl/size.hpp>
 #include <iostream>
 
-namespace mpl = boost::mpl;
-
 int main() {
-    // 定义类型序列
-    typedef mpl::vector<int, double, char, float> types;
-
-    // 获取序列大小
-    std::cout << "序列大小: " << mpl::size<types>::value << std::endl;
-
-    // 访问特定位置的类型
-    typedef mpl::at_c<types, 0>::type first_type;   // int
-    typedef mpl::at_c<types, 2>::type third_type;   // char
-
-    std::cout << "第一个类型大小: " << sizeof(first_type) << std::endl;
-    std::cout << "第三个类型大小: " << sizeof(third_type) << std::endl;
-
+    using namespace boost::mpl;
+    
+    // vector
+    typedef vector<int, double, char, float> vec;
+    std::cout << "vector 大小: " << size<vec>::value << std::endl;
+    
+    // list
+    typedef list<int, double, char> lst;
+    std::cout << "list 大小: " << size<lst>::value << std::endl;
+    
     return 0;
 }
 ```
 
 ---
 
-## 编译期整数运算
-
-```cpp
-#include <boost/mpl/int.hpp>
-#include <boost/mpl/plus.hpp>
-#include <boost/mpl/minus.hpp>
-#include <boost/mpl/times.hpp>
-#include <boost/mpl/divides.hpp>
-#include <iostream>
-
-namespace mpl = boost::mpl;
-
-int main() {
-    // 定义编译期整数
-    typedef mpl::int_<10> ten;
-    typedef mpl::int_<20> twenty;
-
-    // 编译期运算
-    typedef mpl::plus<ten, twenty>::type sum;           // 30
-    typedef mpl::minus<twenty, ten>::type difference;   // 10
-    typedef mpl::times<ten, twenty>::type product;      // 200
-    typedef mpl::divides<twenty, ten>::type quotient;   // 2
-
-    std::cout << "10 + 20 = " << sum::value << std::endl;
-    std::cout << "20 - 10 = " << difference::value << std::endl;
-    std::cout << "10 * 20 = " << product::value << std::endl;
-    std::cout << "20 / 10 = " << quotient::value << std::endl;
-
-    return 0;
-}
-```
-
----
-
-## 类型序列操作
+## 序列操作
 
 ```cpp
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/push_back.hpp>
 #include <boost/mpl/push_front.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/front.hpp>
-#include <boost/mpl/back.hpp>
+#include <boost/mpl/pop_back.hpp>
 #include <boost/mpl/size.hpp>
 #include <iostream>
 
-namespace mpl = boost::mpl;
-
 int main() {
-    typedef mpl::vector<int, double> vec1;
-
-    // 在后面添加类型
-    typedef mpl::push_back<vec1, char>::type vec2;  // vector<int, double, char>
-
-    // 在前面添加类型
-    typedef mpl::push_front<vec2, bool>::type vec3; // vector<bool, int, double, char>
-
-    // 移除第一个类型
-    typedef mpl::pop_front<vec3>::type vec4;        // vector<int, double, char>
-
-    std::cout << "vec3 大小: " << mpl::size<vec3>::value << std::endl;
-    std::cout << "vec4 大小: " << mpl::size<vec4>::value << std::endl;
-
-    // 获取首尾类型
-    typedef mpl::front<vec3>::type first;  // bool
-    typedef mpl::back<vec3>::type last;    // char
-
-    std::cout << "vec3 第一个类型大小: " << sizeof(first) << std::endl;
-    std::cout << "vec3 最后类型大小: " << sizeof(last) << std::endl;
-
+    using namespace boost::mpl;
+    
+    typedef vector<int, double> vec1;
+    
+    // 添加到末尾
+    typedef push_back<vec1, char>::type vec2;
+    std::cout << "push_back 后大小: " << size<vec2>::value << std::endl;
+    
+    // 添加到开头
+    typedef push_front<vec1, float>::type vec3;
+    std::cout << "push_front 后大小: " << size<vec3>::value << std::endl;
+    
+    // 移除末尾
+    typedef pop_back<vec2>::type vec4;
+    std::cout << "pop_back 后大小: " << size<vec4>::value << std::endl;
+    
     return 0;
 }
 ```
 
 ---
 
-## 编译期条件判断
-
-```cpp
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/int.hpp>
-#include <iostream>
-
-namespace mpl = boost::mpl;
-
-// 根据条件选择类型
-template<bool UseDouble>
-struct NumberType {
-    typedef typename mpl::if_c<UseDouble, double, int>::type type;
-};
-
-int main() {
-    typedef NumberType<true>::type Type1;   // double
-    typedef NumberType<false>::type Type2;  // int
-
-    Type1 v1 = 3.14;
-    Type2 v2 = 42;
-
-    std::cout << "Type1 值: " << v1 << std::endl;
-    std::cout << "Type2 值: " << v2 << std::endl;
-
-    // 使用 bool_
-    typedef mpl::if_<mpl::true_, int, float>::type IntType;
-    typedef mpl::if_<mpl::false_, int, float>::type FloatType;
-
-    std::cout << "IntType 大小: " << sizeof(IntType) << std::endl;
-    std::cout << "FloatType 大小: " << sizeof(FloatType) << std::endl;
-
-    return 0;
-}
-```
-
----
-
-## 编译期循环 - for_each
-
-```cpp
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/for_each.hpp>
-#include <iostream>
-#include <typeinfo>
-
-namespace mpl = boost::mpl;
-
-// 打印类型信息的函数对象
-struct print_type {
-    template<typename T>
-    void operator()(T) const {
-        std::cout << "类型: " << typeid(T).name()
-                  << ", 大小: " << sizeof(T) << " 字节" << std::endl;
-    }
-};
-
-int main() {
-    typedef mpl::vector<char, short, int, long, float, double> types;
-
-    std::cout << "遍历类型序列:\n";
-    mpl::for_each<types>(print_type());
-
-    return 0;
-}
-```
-
----
-
-## 类型查找
-
-```cpp
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/find.hpp>
-#include <boost/mpl/contains.hpp>
-#include <boost/mpl/distance.hpp>
-#include <boost/mpl/begin.hpp>
-#include <iostream>
-
-namespace mpl = boost::mpl;
-
-int main() {
-    typedef mpl::vector<int, double, char, float> types;
-
-    // 检查是否包含某类型
-    std::cout << "包含 double: "
-              << mpl::contains<types, double>::value << std::endl;
-
-    std::cout << "包含 long: "
-              << mpl::contains<types, long>::value << std::endl;
-
-    // 查找类型位置
-    typedef mpl::find<types, char>::type iter;
-    typedef mpl::distance<mpl::begin<types>::type, iter>::type position;
-
-    std::cout << "char 的位置: " << position::value << std::endl;
-
-    return 0;
-}
-```
-
----
-
-## 类型过滤
-
-```cpp
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/copy_if.hpp>
-#include <boost/mpl/back_inserter.hpp>
-#include <boost/mpl/sizeof.hpp>
-#include <boost/mpl/greater.hpp>
-#include <boost/mpl/placeholders.hpp>
-#include <boost/mpl/size.hpp>
-#include <iostream>
-
-namespace mpl = boost::mpl;
-using namespace mpl::placeholders;
-
-int main() {
-    typedef mpl::vector<char, short, int, long, double> types;
-
-    // 过滤：只保留大小大于2字节的类型
-    typedef mpl::copy_if<
-        types,
-        mpl::greater<mpl::sizeof_<_1>, mpl::int_<2>>,
-        mpl::back_inserter<mpl::vector<>>
-    >::type large_types;
-
-    std::cout << "原始类型数量: " << mpl::size<types>::value << std::endl;
-    std::cout << "大类型数量: " << mpl::size<large_types>::value << std::endl;
-
-    return 0;
-}
-```
-
----
-
-## 类型转换
+## 算法：transform
 
 ```cpp
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
-#include <boost/mpl/placeholders.hpp>
 #include <boost/mpl/at.hpp>
 #include <iostream>
+#include <typeinfo>
 
-namespace mpl = boost::mpl;
-using namespace mpl::placeholders;
-
-// 添加指针的元函数
-template<typename T>
+template <typename T>
 struct add_pointer {
     typedef T* type;
 };
 
 int main() {
-    typedef mpl::vector<int, double, char> types;
-
-    // 将所有类型转换为指针类型
-    typedef mpl::transform<types, add_pointer<_1>>::type pointer_types;
-
-    typedef mpl::at_c<pointer_types, 0>::type IntPtr;     // int*
-    typedef mpl::at_c<pointer_types, 1>::type DoublePtr;  // double*
-    typedef mpl::at_c<pointer_types, 2>::type CharPtr;    // char*
-
-    std::cout << "IntPtr 大小: " << sizeof(IntPtr) << std::endl;
-    std::cout << "DoublePtr 大小: " << sizeof(DoublePtr) << std::endl;
-    std::cout << "CharPtr 大小: " << sizeof(CharPtr) << std::endl;
-
+    using namespace boost::mpl;
+    
+    typedef vector<int, double, char> types;
+    
+    // 转换所有类型为指针
+    typedef transform<types, add_pointer<_1>>::type pointer_types;
+    
+    typedef at_c<pointer_types, 0>::type first;  // int*
+    typedef at_c<pointer_types, 1>::type second; // double*
+    
+    std::cout << "第一个: " << typeid(first).name() << std::endl;
+    std::cout << "第二个: " << typeid(second).name() << std::endl;
+    
     return 0;
 }
 ```
 
 ---
 
-## 编译期阶乘
+## 算法：filter
+
+```cpp
+#include <boost/mpl/vector.hpp>
+#include <boost/mpl/copy_if.hpp>
+#include <boost/mpl/back_inserter.hpp>
+#include <boost/mpl/size.hpp>
+#include <boost/type_traits.hpp>
+#include <iostream>
+
+int main() {
+    using namespace boost::mpl;
+    
+    typedef vector<int, double, char*, float, int*> types;
+    
+    // 过滤出指针类型
+    typedef copy_if<
+        types,
+        boost::is_pointer<_1>,
+        back_inserter<vector<>>
+    >::type pointer_types;
+    
+    std::cout << "原始大小: " << size<types>::value << std::endl;
+    std::cout << "指针类型数量: " << size<pointer_types>::value << std::endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 算法：find
+
+```cpp
+#include <boost/mpl/vector.hpp>
+#include <boost/mpl/find.hpp>
+#include <boost/mpl/distance.hpp>
+#include <boost/mpl/begin.hpp>
+#include <iostream>
+
+int main() {
+    using namespace boost::mpl;
+    
+    typedef vector<int, double, char, float> types;
+    
+    // 查找 char
+    typedef find<types, char>::type iter;
+    typedef begin<types>::type begin_iter;
+    
+    int index = distance<begin_iter, iter>::value;
+    std::cout << "char 的索引: " << index << std::endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 条件判断
+
+```cpp
+#include <boost/mpl/if.hpp>
+#include <boost/mpl/bool.hpp>
+#include <boost/type_traits.hpp>
+#include <iostream>
+#include <typeinfo>
+
+template <typename T>
+struct select_type {
+    typedef typename boost::mpl::if_<
+        boost::is_integral<T>,
+        int,
+        double
+    >::type type;
+};
+
+int main() {
+    typedef select_type<char>::type type1;    // int
+    typedef select_type<float>::type type2;   // double
+    
+    std::cout << "char -> " << typeid(type1).name() << std::endl;
+    std::cout << "float -> " << typeid(type2).name() << std::endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 算术运算
+
+```cpp
+#include <boost/mpl/int.hpp>
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/minus.hpp>
+#include <boost/mpl/multiplies.hpp>
+#include <boost/mpl/divides.hpp>
+#include <iostream>
+
+int main() {
+    using namespace boost::mpl;
+    
+    typedef int_<5> five;
+    typedef int_<3> three;
+    
+    std::cout << "5 + 3 = " << plus<five, three>::value << std::endl;
+    std::cout << "5 - 3 = " << minus<five, three>::value << std::endl;
+    std::cout << "5 * 3 = " << multiplies<five, three>::value << std::endl;
+    std::cout << "6 / 2 = " << divides<int_<6>, int_<2>>::value << std::endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 逻辑运算
+
+```cpp
+#include <boost/mpl/bool.hpp>
+#include <boost/mpl/and.hpp>
+#include <boost/mpl/or.hpp>
+#include <boost/mpl/not.hpp>
+#include <iostream>
+
+int main() {
+    using namespace boost::mpl;
+    
+    typedef true_ t;
+    typedef false_ f;
+    
+    std::cout << std::boolalpha;
+    std::cout << "true && true = " << and_<t, t>::value << std::endl;
+    std::cout << "true && false = " << and_<t, f>::value << std::endl;
+    std::cout << "true || false = " << or_<t, f>::value << std::endl;
+    std::cout << "!true = " << not_<t>::value << std::endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 递归元编程
 
 ```cpp
 #include <boost/mpl/int.hpp>
 #include <boost/mpl/if.hpp>
-#include <boost/mpl/times.hpp>
+#include <boost/mpl/multiplies.hpp>
 #include <boost/mpl/minus.hpp>
 #include <iostream>
 
-namespace mpl = boost::mpl;
-
-// 编译期阶乘
-template<int N>
+template <int N>
 struct factorial {
-    typedef typename mpl::times<
-        mpl::int_<N>,
-        typename factorial<N - 1>::type
+    typedef typename boost::mpl::if_c<
+        N == 0,
+        boost::mpl::int_<1>,
+        boost::mpl::multiplies<
+            boost::mpl::int_<N>,
+            typename factorial<N-1>::type
+        >
     >::type type;
-
+    
     static const int value = type::value;
 };
 
-template<>
+template <>
 struct factorial<0> {
-    typedef mpl::int_<1> type;
+    typedef boost::mpl::int_<1> type;
     static const int value = 1;
 };
 
 int main() {
-    std::cout << "0! = " << factorial<0>::value << std::endl;
     std::cout << "5! = " << factorial<5>::value << std::endl;
     std::cout << "10! = " << factorial<10>::value << std::endl;
-
-    return 0;
-}
-```
-
----
-
-## 编译期列表处理
-
-```cpp
-#include <boost/mpl/list.hpp>
-#include <boost/mpl/fold.hpp>
-#include <boost/mpl/plus.hpp>
-#include <boost/mpl/sizeof.hpp>
-#include <boost/mpl/int.hpp>
-#include <boost/mpl/placeholders.hpp>
-#include <iostream>
-
-namespace mpl = boost::mpl;
-using namespace mpl::placeholders;
-
-int main() {
-    typedef mpl::list<char, short, int, long, double> types;
-
-    // 计算所有类型大小之和（编译期）
-    typedef mpl::fold<
-        types,
-        mpl::int_<0>,
-        mpl::plus<_1, mpl::sizeof_<_2>>
-    >::type total_size;
-
-    std::cout << "所有类型大小总和: " << total_size::value << " 字节" << std::endl;
-
+    
     return 0;
 }
 ```
@@ -366,5 +312,4 @@ int main() {
 ## 参考资源
 
 - [Boost.MPL 官方文档](https://www.boost.org/doc/libs/1_90_0/libs/mpl/doc/index.html)
-- [MPL 参考手册](https://www.boost.org/doc/libs/1_90_0/libs/mpl/doc/refmanual.html)
-- [MPL 教程](https://www.boost.org/doc/libs/1_90_0/libs/mpl/doc/tutorial.html)
+- [元编程教程](https://www.boost.org/doc/libs/1_90_0/libs/mpl/doc/tutorial/tutorial-metafunctions.html)
